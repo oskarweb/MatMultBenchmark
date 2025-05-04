@@ -23,7 +23,14 @@ if(NOT DEFINED SRC_DIRECTORY)
     set(SRC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 endif()
 
-set(OCL_DEMO_SRCS "${SRC_DIRECTORY}/main.cpp")
+set(OCL_DEMO_SRCS 
+    "${SRC_DIRECTORY}/benchmarks.h"
+    "${SRC_DIRECTORY}/main.cpp"
+    "${SRC_DIRECTORY}/matrix.h"
+    "${SRC_DIRECTORY}/thread_pool.h"
+    "${SRC_DIRECTORY}/thread_pool.cpp"
+    "${SRC_DIRECTORY}/utils.h"
+)
 
 add_executable(${PROJECT_NAME} ${OCL_DEMO_SRCS})
 
