@@ -1,72 +1,149 @@
 #pragma once
 
+#include "utils.h"
+#include "simd_traits.h"
+
+#include <algorithm>
 #include <array>
 #include <random>
 #include <vector>
 
-#include "utils.h"
-
-
 template<typename MatrixA, typename MatrixB>
 concept CompatibleMatrices = (MatrixA::Columns == MatrixB::Rows);
 
-template<typename DataType = uint64_t, uint32_t _Rows = 2, uint32_t _Cols = 2>
+template<typename MatrixA, typename MatrixB>
+concept EqualDims = (MatrixA::Rows == MatrixB::Rows) && (MatrixA::Columns == MatrixB::Columns);
+
+enum class MultType {
+    Naive = 0,
+    Simd
+};
+
+template<typename DataType = uint32_t, uint32_t _Rows = 2, uint32_t _Cols = 2>
 class Matrix { 
 public:
+    template <MultType, typename MatrixA, typename MatrixB>
+    struct MatrixMultImpl;
+    
     constexpr const static uint32_t Rows = _Rows;
     constexpr const static uint32_t Columns = _Cols;
-    
-    Matrix() {
-        std::ranges::for_each(m_data, [](auto &row){
-            row.fill(static_cast<DataType>(0));
-        });
-    }
 
     Matrix(DataType value) {
-        std::ranges::for_each(m_data, [](auto &row){
-            row.fill(value);
-        });
+        std::ranges::fill(m_data, value);
     }
 
-    template<typename OtherMatrix>
+    Matrix() : Matrix(static_cast<DataType>(0)) {}
+
+    template<MultType multType, typename OtherMatrix>
     requires CompatibleMatrices<Matrix<DataType, Rows, Columns>, OtherMatrix>
-    Matrix<DataType, Rows, OtherMatrix::Columns> mult(const OtherMatrix &other) const {
-        Matrix<DataType, Rows, OtherMatrix::Columns> result;
-        
-        for (uint32_t i = 0; i < Rows; ++i) {
-            for (uint32_t j = 0; j < OtherMatrix::Columns; ++j) {
-                for (uint32_t k = 0; k < Columns; ++k) {
-                    result.m_data[i][j] += this->m_data[i][k] * other.m_data[k][j];
+    Matrix<DataType, Rows, OtherMatrix::Columns> mult(const OtherMatrix& other) const 
+    {
+        return MatrixMultImpl<multType, Matrix, OtherMatrix>::multiply(*this, other);
+    }
+
+    void randomFill(DataType min, DataType max) {
+        static std::mt19937 gen(1);
+        static std::uniform_int_distribution<DataType> distrib(min, max);
+
+        std::generate(m_data.begin(), m_data.end(), [] { return distrib(gen); });
+    }
+
+    void randomFill() { randomFill(0, 100); }
+
+    std::array<DataType, Rows * Columns> &data() { return m_data; }
+    const std::array<DataType, Rows * Columns> &data() const { return m_data; }
+
+    DataType &operator()(size_t i, size_t j) { return m_data[i * Columns + j]; }
+    const DataType &operator()(size_t i, size_t j) const { return m_data[i * Columns + j]; }
+
+    DataType &operator[](size_t i) { return m_data[i]; }
+    const DataType &operator[](size_t i) const { return m_data[i]; }
+    
+    template<typename OtherMatrix>
+    requires EqualDims<Matrix<DataType, Rows, Columns>, OtherMatrix>
+    bool operator==(const OtherMatrix &other) const { return std::ranges::equal(this->m_data, other.data()); }
+private:
+    std::array<DataType, Rows * Columns> m_data;
+};
+
+#define A(i,j) a[(i) * lda + (j)]
+#define B(i,j) b[(i) * ldb + (j)]
+#define C(i,j) c[(i) * ldc + (j)]
+
+template <typename T, unsigned RA, unsigned RB>
+void matmul_dot_inner(int k, const T* a, int lda, const T* b, int ldb,
+                      T* c, int ldc) {
+    using Simd = SimdTraits<T>;
+    using Vec = typename Simd::vec;
+    constexpr int W = Simd::width;
+
+    Vec csum[RA][RB] = {};
+
+    for (int p = 0; p < k; ++p) {
+        for (int bi = 0; bi < RB; ++bi) {
+            Vec bb = Simd::load(&B(p, bi * W));
+            for (int ai = 0; ai < RA; ++ai) {
+                Vec aa = Simd::broadcast(A(ai, p));
+                csum[ai][bi] = Simd::add(csum[ai][bi], Simd::mul(aa, bb));
+            }
+        }
+    }
+
+    for (int ai = 0; ai < RA; ++ai) {
+        for (int bi = 0; bi < RB; ++bi) {
+            Simd::store(&C(ai, bi * W), csum[ai][bi]);
+        }
+    }
+}
+
+template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename MatrixA, typename MatrixB>
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Naive, MatrixA, MatrixB> {
+    static auto multiply(const MatrixA& a, const MatrixB& b) {
+        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        ResultMatrix result;
+
+        for (uint32_t i = 0; i < MatrixA::Rows; ++i) {
+            for (uint32_t j = 0; j < MatrixB::Columns; ++j) {
+                for (uint32_t k = 0; k < MatrixA::Columns; ++k) {
+                    result(i, j) += a(i, k) * b(k, j);
                 }
             }
         }
 
         return result;
     }
+};
 
-    void randomFill(DataType min, DataType max) {
-        static std::mt19937 gen(1);
-        static std::uniform_int_distribution<DataType> distrib(1, 100);
+template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename MatrixA, typename MatrixB>
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Simd, MatrixA, MatrixB> {
+    static auto multiply(const MatrixA& a, const MatrixB& b) {
+        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        ResultMatrix result;
+        constexpr int regsA = 4;
+        constexpr int regsB = 2;
+        constexpr int blockCols = regsB * 8;
+        constexpr int M = MatrixA::Rows;
+        constexpr int N = MatrixB::Columns;
+        constexpr int K = MatrixA::Columns;
+        constexpr int lda = MatrixA::Columns;
+        constexpr int ldb = MatrixB::Columns;
+        constexpr int ldc = MatrixB::Columns;
 
-        std::ranges::for_each(m_data, [](auto &row){
-            std::generate(row.begin(), row.end(), [] { return distrib(gen); });
-        });
+        for (int i = 0; i <= M - regsA; i += regsA) {
+            for (int j = 0; j <= N - blockCols; j += blockCols) {
+                matmul_dot_inner<DataType, regsA, regsB>(
+                    K,
+                    &a[i * lda], lda,
+                    &b[j], ldb,
+                    &result[i * ldc + j], ldc
+                );
+            }
+        }
+
+        return result;
     }
-
-    void randomFill() {
-        randomFill(0, 100);
-    }
-
-    std::array<std::array<DataType, Columns>, Rows> &data() {
-        return m_data;
-    }
-
-    const std::array<std::array<DataType, Columns>, Rows> &get() const {
-        return m_data;
-    }
-
-private:
-    std::array<std::array<DataType, Columns>, Rows> m_data;
 };
 
 template<ElementIterable T, typename D>

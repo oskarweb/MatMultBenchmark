@@ -1,10 +1,15 @@
 #define CL_TARGET_OPENCL_VERSION 300
 
-#include <CL/cl.h>
-
 #include "benchmarks.h"
 
+#include <CL/cl.h>
+
+#include <iostream>
+#include <cstring>
+#include <cassert>
+
 #define CHECK_ERROR(err, msg) if (err != CL_SUCCESS) { std::cerr << msg << ": " << err << std::endl; exit(1); }
+
 
 int main() {
 //     const int N = 1024;
@@ -84,16 +89,23 @@ int main() {
     ParCpuMatMultBench<uint64_t, 100u, 1u> cpuParBench1("CpuParBench(1)");
     cpuParBench1.measure();
 
-    Matrix A{};
-    Matrix B{};
-    
-    A.randomFill();
-    B.randomFill();
+    Matrix<uint32_t, 16, 16> a{};
+    Matrix<uint32_t, 16, 16> b{};
 
-    A.mult(B);
+    a.randomFill();
+    b.randomFill();
 
-    std::cout << A;
-    std::cout << B;
+    std::cout << a << '\n';
+    std::cout << b << '\n';
+
+    Matrix Res1 = a.mult<MultType::Naive>(b);
+    Matrix Res2 = a.mult<MultType::Simd>(b);
+    std::cout << "RES 1: " << '\n';
+    std::cout << Res1 << '\n';
+    std::cout << "RES 2: " << '\n';
+    std::cout << Res2 << '\n';
+
+    assert(Res1 == Res2);
 
     return 0;
 }

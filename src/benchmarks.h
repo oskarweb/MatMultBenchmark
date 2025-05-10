@@ -1,5 +1,8 @@
 #pragma once
 
+#include "matrix.h"
+#include "thread_pool.h"
+
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -8,9 +11,6 @@
 #include <numeric>
 #include <sstream>
 #include <string_view>
-
-#include "matrix.h"
-#include "thread_pool.h"
 
 class Runner 
 {
@@ -118,7 +118,7 @@ protected:
     void compute() override 
     {
         for (int i = 0; i < 4; ++i) {
-            threadPool.enqueue([]{ std::cout << "TEST"; });
+            threadPool.enqueue([]{ std::cout << ""; });
         }
     }
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <ranges>
+#include <algorithm>
 #include <iostream>
+#include <ranges>
 
 template<typename DataType, uint32_t Rows, uint32_t Columns>
 class Matrix;
@@ -22,13 +23,12 @@ concept ElementIterable =
 
 template<typename DataType, uint32_t Rows, uint32_t Columns>
 std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns> &m) {
-    std::ranges::for_each(m.get(), [&os](const auto &row) {
-        for (auto element_it = row.begin(); element_it != row.end(); ++element_it) {
-            os << *element_it;
-            if (element_it != row.end() - 1)
-                os << " ";
+    for (int i = 0; i < Rows; ++i) {
+        for (int j = 0; j < Columns; ++j) {
+            os << m(i, j) << " ";
         }
-        os << '\n';
-    });
+        if (i < (Rows - 1))
+            os << "\n";
+    }
     return os;
 }
