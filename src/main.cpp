@@ -84,5 +84,16 @@ int main() {
     ParCpuMatMultBench<uint64_t, 100u, 1u> cpuParBench1("CpuParBench(1)");
     cpuParBench1.measure();
 
+    Matrix A{};
+    Matrix B{};
+    
+    A.randomFill();
+    B.randomFill();
+
+    A.mult(B);
+
+    std::cout << A;
+    std::cout << B;
+
     return 0;
 }
