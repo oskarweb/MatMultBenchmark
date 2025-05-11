@@ -89,11 +89,11 @@ int main() {
     ParCpuMatMultBench<uint64_t, 100u, 1u> cpuParBench1("CpuParBench(1)");
     cpuParBench1.measure();
 
-    Matrix<uint32_t, 16, 16> a{};
-    Matrix<uint32_t, 16, 16> b{};
+    Matrix<uint32_t, 32, 32> a{};
+    Matrix<uint32_t, 32, 32> b{};
 
-    a.randomFill();
-    b.randomFill();
+    a.randomFill(0, 1);
+    b.randomFill(0, 1);
 
     std::cout << a << '\n';
     std::cout << b << '\n';

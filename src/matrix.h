@@ -43,12 +43,19 @@ public:
 
     void randomFill(DataType min, DataType max) {
         static std::mt19937 gen(1);
-        static std::uniform_int_distribution<DataType> distrib(min, max);
 
-        std::generate(m_data.begin(), m_data.end(), [] { return distrib(gen); });
+        if constexpr (std::is_integral_v<DataType>) {
+            std::uniform_int_distribution<DataType> distrib(min, max);
+            std::generate(m_data.begin(), m_data.end(), [&]() { return distrib(gen); });
+        } else if constexpr (std::is_floating_point_v<DataType>) {
+            std::uniform_real_distribution<DataType> distrib(min, max);
+            std::generate(m_data.begin(), m_data.end(), [&]() { return distrib(gen); });
+        } else {
+            static_assert(std::is_arithmetic_v<DataType>, "Unsupported data type for randomFill.");
+        }
     }
 
-    void randomFill() { randomFill(0, 100); }
+    void randomFill() { randomFill(static_cast<DataType>(0), static_cast<DataType>(100)); }
 
     std::array<DataType, Rows * Columns> &data() { return m_data; }
     const std::array<DataType, Rows * Columns> &data() const { return m_data; }
@@ -121,11 +128,11 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Simd, MatrixA, 
     static auto multiply(const MatrixA& a, const MatrixB& b) {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
-        constexpr int regsA = 4;
-        constexpr int regsB = 2;
+        constexpr int regsA = 3;
+        constexpr int regsB = 4;
         constexpr int blockCols = regsB * 8;
-        constexpr int M = MatrixA::Rows;
-        constexpr int N = MatrixB::Columns;
+        constexpr int M = MatrixA::Rows; // = 32 - 3 = 29    (M - RA) % RA == 0 
+        constexpr int N = MatrixB::Columns; // = 32 - 32 = 0
         constexpr int K = MatrixA::Columns;
         constexpr int lda = MatrixA::Columns;
         constexpr int ldb = MatrixB::Columns;
