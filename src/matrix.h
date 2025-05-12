@@ -16,7 +16,9 @@ concept EqualDims = (MatrixA::Rows == MatrixB::Rows) && (MatrixA::Columns == Mat
 
 enum class MultType {
     Naive = 0,
-    Simd
+    Simd,
+    MultithreadRow,
+    MultithreadElement
 };
 
 template<typename DataType = uint32_t, uint32_t _Rows = 2, uint32_t _Cols = 2>
@@ -128,15 +130,15 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Simd, MatrixA, 
     static auto multiply(const MatrixA& a, const MatrixB& b) {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
-        constexpr int regsA = 3;
-        constexpr int regsB = 4;
-        constexpr int blockCols = regsB * 8;
-        constexpr int M = MatrixA::Rows; // = 32 - 3 = 29    (M - RA) % RA == 0 
-        constexpr int N = MatrixB::Columns; // = 32 - 32 = 0
-        constexpr int K = MatrixA::Columns;
-        constexpr int lda = MatrixA::Columns;
-        constexpr int ldb = MatrixB::Columns;
-        constexpr int ldc = MatrixB::Columns;
+        constexpr uint32_t regsA = 3;
+        constexpr uint32_t regsB = 4;
+        constexpr uint32_t blockCols = regsB * 8;
+        constexpr uint32_t M = MatrixA::Rows; // = 32 - 3 = 29    (M - RA) % RA == 0 
+        constexpr uint32_t N = MatrixB::Columns; // = 32 - 32 = 0
+        constexpr uint32_t K = MatrixA::Columns;
+        constexpr uint32_t lda = MatrixA::Columns;
+        constexpr uint32_t ldb = MatrixB::Columns;
+        constexpr uint32_t ldc = MatrixB::Columns;
 
         for (int i = 0; i <= M - regsA; i += regsA) {
             for (int j = 0; j <= N - blockCols; j += blockCols) {
@@ -149,7 +151,31 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Simd, MatrixA, 
             }
         }
 
+        for (uint32_t i = M - M % regsA; i < M; ++i)
+            for (uint32_t j = 0; j < N; ++j)
+                for (uint32_t k = 0; k < K; ++k)
+                    result[i * ldc + j] += a[i * lda + k] * b[k * ldb + j];
+
+
+        for (uint32_t i = 0; i <= M - regsA; i += regsA)
+            for (uint32_t j = N - N % blockCols; j < N; ++j)
+                for (uint32_t k = 0; k < K; ++k)
+                    for (uint32_t ii = 0; ii < regsA; ++ii)
+                        result[(i + ii) * ldc + j] += a[(i + ii) * lda + k] * b[k * ldb + j];
+        
         return result;
+    }
+};
+
+template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename MatrixA, typename MatrixB>
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadRow, MatrixA, MatrixB> {
+    static auto multiply(const MatrixA& a, const MatrixB& b) {
+        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        ResultMatrix result;
+        constexpr uint32_t M = MatrixA::Rows; // = 32 - 3 = 29    (M - RA) % RA == 0 
+        constexpr uint32_t N = MatrixB::Columns; // = 32 - 32 = 0
+        constexpr uint32_t K = MatrixA::Columns;
     }
 };
 
