@@ -32,3 +32,8 @@ std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns>
     }
     return os;
 }
+
+template <typename T, typename... Rest>
+bool allEqual(const T& first, const Rest&... rest) {
+    return ((first == rest) && ...);
+}

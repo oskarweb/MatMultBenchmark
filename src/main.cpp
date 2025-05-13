@@ -100,12 +100,14 @@ int main() {
 
     Matrix Res1 = a.mult<MultType::Naive>(b);
     Matrix Res2 = a.mult<MultType::Simd>(b);
-    std::cout << "RES 1: " << '\n';
-    std::cout << Res1 << '\n';
-    std::cout << "RES 2: " << '\n';
-    std::cout << Res2 << '\n';
+    Matrix Res3 = a.mult<MultType::MultithreadRow>(b);
+    Matrix Res4 = a.mult<MultType::MultithreadElement>(b);
+    // std::cout << "RES 1: " << '\n';
+    // std::cout << Res2 << '\n';
+    // std::cout << "RES 2: " << '\n';
+    // std::cout << Res3 << '\n';
 
-    assert(Res1 == Res2);
-
+    assert(allEqual(Res1, Res2, Res3, Res4));
+    
     return 0;
 }

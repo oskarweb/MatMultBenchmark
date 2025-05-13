@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <array>
 #include <random>
+#include <thread>
 #include <vector>
 
 template<typename MatrixA, typename MatrixB>
@@ -173,9 +174,63 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadRow,
     static auto multiply(const MatrixA& a, const MatrixB& b) {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
-        constexpr uint32_t M = MatrixA::Rows; // = 32 - 3 = 29    (M - RA) % RA == 0 
-        constexpr uint32_t N = MatrixB::Columns; // = 32 - 32 = 0
+        constexpr uint32_t M = MatrixA::Rows;
+        constexpr uint32_t N = MatrixB::Columns;
         constexpr uint32_t K = MatrixA::Columns;
+
+        std::array<std::thread, M> threads;
+
+        for(size_t i = 0; i < M; ++i) 
+        {
+            threads[i] = std::thread([&a, &b, &result, i](){
+                for (size_t j = 0; j < N; ++j) 
+                {
+                    for (size_t k = 0; k < K; ++k)
+                    {
+                        result[i * N + j] += a[i * K + k] * b[k * N + j];
+                    }
+                }
+            });
+        }
+
+        for (auto it = threads.begin(); it < threads.end(); ++it) {
+            (*it).join();
+        }
+
+        return result;
+    }
+};
+
+template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename MatrixA, typename MatrixB>
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadElement, MatrixA, MatrixB> {
+    static auto multiply(const MatrixA& a, const MatrixB& b) {
+        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        ResultMatrix result;
+        constexpr uint32_t M = MatrixA::Rows;
+        constexpr uint32_t N = MatrixB::Columns;
+        constexpr uint32_t K = MatrixA::Columns;
+
+        std::array<std::thread, M * N> threads;
+
+        for(size_t i = 0; i < M; ++i) 
+        {
+            for (size_t j = 0; j < N; ++j) 
+            {
+                threads[i * K + j] = std::thread([&a, &b, &result, i, j](){
+                    for (size_t k = 0; k < K; ++k)
+                    {
+                        result[i * N + j] += a[i * K + k] * b[k * N + j];
+                    }
+                });
+            }
+        }
+
+        for (auto it = threads.begin(); it < threads.end(); ++it) {
+            (*it).join();
+        }
+
+        return result;
     }
 };
 
