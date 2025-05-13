@@ -89,14 +89,14 @@ int main() {
     ParCpuMatMultBench<uint64_t, 100u, 1u> cpuParBench1("CpuParBench(1)");
     cpuParBench1.measure();
 
-    Matrix<uint32_t, 32, 32> a{};
-    Matrix<uint32_t, 32, 32> b{};
+    Matrix<uint32_t, 64, 64> a{};
+    Matrix<uint32_t, 64, 64> b{};
 
     a.randomFill(0, 1);
     b.randomFill(0, 1);
 
-    std::cout << a << '\n';
-    std::cout << b << '\n';
+    // std::cout << a << '\n';
+    // std::cout << b << '\n';
 
     Matrix Res1 = a.mult<MultType::Naive>(b);
     Matrix Res2 = a.mult<MultType::Simd>(b);
@@ -108,6 +108,6 @@ int main() {
     // std::cout << Res3 << '\n';
 
     assert(allEqual(Res1, Res2, Res3, Res4));
-    
+
     return 0;
 }

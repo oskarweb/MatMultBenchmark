@@ -12,9 +12,15 @@ project(${PROJECT_NAME} VERSION 1.0)
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
+set(STACK_SIZE "1000000" CACHE STRING "Stack size in bytes")
+
+message(STATUS "Stack size: ${STACK_SIZE} bytes")
+
 if(MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:${STACK_SIZE}")
     add_compile_options(/W4 /WX /permissive-)
 else()
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,${STACK_SIZE}")
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 

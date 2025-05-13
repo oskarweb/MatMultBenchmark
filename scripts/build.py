@@ -17,15 +17,17 @@ def setup_parser(root_parser):
     root_parser.add_argument("--jobs", type=int, help="number of parallel jobs to run")
     root_parser.add_argument("--target", help="target to build")
     root_parser.add_argument("--build-type", help="CMake build type to use")
+    root_parser.add_argument("--stack-size", type=int, help="stack size to use")
 
 def process_command_line():
     parser = argparse.ArgumentParser(prog="build")
     setup_parser(parser)
     return parser.parse_args()
 
-def build_project(build_directory, jobs=None, target=None, build_type=None):
+def build_project(build_directory, jobs=None, target=None, build_type=None, stack_size=None):
     os.chdir(PROJECT_DIR)
-    cmd = f"cmake -B {build_directory} -S ."
+    options = f"-DSTACK_SIZE={stack_size}" if stack_size else ""
+    cmd = f"cmake {options} -B {build_directory} -S ."
     logger.info("CMake command line: %s", cmd)
     process = subprocess.run(
         cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -55,7 +57,7 @@ def main(args=None):
     logger.debug("Arguments: %s", args)
 
     try:
-        build_project(args.build_directory, args.jobs, args.target, args.build_type)
+        build_project(args.build_directory, args.jobs, args.target, args.build_type, args.stack_size)
     except:
         logger.exception("Fatal error")
         return -1
