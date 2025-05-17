@@ -102,12 +102,13 @@ int main() {
     Matrix Res2 = a.mult<MultType::Simd>(b);
     Matrix Res3 = a.mult<MultType::MultithreadRow>(b);
     Matrix Res4 = a.mult<MultType::MultithreadElement>(b);
+    Matrix Res5 = a.mult<MultType::MultithreadSimd>(b);
     // std::cout << "RES 1: " << '\n';
-    // std::cout << Res2 << '\n';
+    // std::cout << Res4 << '\n';
     // std::cout << "RES 2: " << '\n';
-    // std::cout << Res3 << '\n';
+    // std::cout << Res5 << '\n';
 
-    assert(allEqual(Res1, Res2, Res3, Res4));
+    assert(allEqual(Res1, Res2, Res3, Res4, Res5));
 
     return 0;
 }

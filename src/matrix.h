@@ -5,6 +5,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
+#include <mutex>
 #include <random>
 #include <thread>
 #include <vector>
@@ -19,7 +21,8 @@ enum class MultType {
     Naive = 0,
     Simd,
     MultithreadRow,
-    MultithreadElement
+    MultithreadElement,
+    MultithreadSimd,
 };
 
 template<typename DataType = uint32_t, uint32_t _Rows = 2, uint32_t _Cols = 2>
@@ -133,7 +136,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Simd, MatrixA, 
         ResultMatrix result;
         constexpr uint32_t regsA = 3;
         constexpr uint32_t regsB = 4;
-        constexpr uint32_t blockCols = regsB * 8;
+        constexpr uint32_t blockCols = regsB * SimdTraits<DataType>::width;
         constexpr uint32_t M = MatrixA::Rows; // = 32 - 3 = 29    (M - RA) % RA == 0 
         constexpr uint32_t N = MatrixB::Columns; // = 32 - 32 = 0
         constexpr uint32_t K = MatrixA::Columns;
@@ -180,12 +183,12 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadRow,
 
         std::array<std::thread, M> threads;
 
-        for(size_t i = 0; i < M; ++i) 
+        for(uint32_t i = 0; i < M; ++i) 
         {
             threads[i] = std::thread([&a, &b, &result, i](){
-                for (size_t j = 0; j < N; ++j) 
+                for (uint32_t j = 0; j < N; ++j) 
                 {
-                    for (size_t k = 0; k < K; ++k)
+                    for (uint32_t k = 0; k < K; ++k)
                     {
                         result[i * N + j] += a[i * K + k] * b[k * N + j];
                     }
@@ -213,12 +216,12 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadElem
 
         std::array<std::thread, M * N> threads;
 
-        for(size_t i = 0; i < M; ++i) 
+        for(uint32_t i = 0; i < M; ++i) 
         {
-            for (size_t j = 0; j < N; ++j) 
+            for (uint32_t j = 0; j < N; ++j) 
             {
                 threads[i * K + j] = std::thread([&a, &b, &result, i, j](){
-                    for (size_t k = 0; k < K; ++k)
+                    for (uint32_t k = 0; k < K; ++k)
                     {
                         result[i * N + j] += a[i * K + k] * b[k * N + j];
                     }
@@ -230,6 +233,76 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadElem
             (*it).join();
         }
 
+        return result;
+    }
+};
+
+template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename MatrixA, typename MatrixB>
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadSimd, MatrixA, MatrixB> {
+    static auto multiply(const MatrixA& a, const MatrixB& b) {
+        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        ResultMatrix result;
+        constexpr uint32_t regsA = 3;
+        constexpr uint32_t regsB = 4;
+        constexpr uint32_t blockCols = regsB * SimdTraits<DataType>::width;
+        constexpr uint32_t M = MatrixA::Rows;
+        constexpr uint32_t N = MatrixB::Columns;
+        constexpr uint32_t K = MatrixA::Columns;
+        constexpr uint32_t lda = MatrixA::Columns;
+        constexpr uint32_t ldb = MatrixB::Columns;
+        constexpr uint32_t ldc = MatrixB::Columns;
+        constexpr uint32_t numRowBlocks = M / regsA;
+        constexpr uint32_t numColBlocks = N / blockCols;
+        
+        const uint32_t threadCount = std::max(4u, std::thread::hardware_concurrency());
+        std::vector<std::thread> threads(threadCount);
+        uint32_t blocksPerThread = (numRowBlocks + threadCount - 1) / threadCount; // NEEDS FIX
+
+        static std::mutex cout_mutex;
+
+        for (uint32_t tid = 0; tid < threadCount; ++tid) {
+            threads[tid] = std::thread([tid, blocksPerThread, &a, &b, &result, lda, ldb, ldc]() {
+                uint32_t startRow = tid * blocksPerThread;
+                uint32_t endRow = std::min(startRow + blocksPerThread, numRowBlocks);
+                {   
+                    std::lock_guard<std::mutex> lock(cout_mutex);
+                    std::cout << "Thread[" << tid << "] start: " << startRow << " end: " << endRow << '\n';
+                }
+            
+                for (uint32_t blockRow = startRow; blockRow < endRow; ++blockRow) {
+                    uint32_t i = blockRow * regsA;
+                    for (uint32_t blockCol = 0; blockCol < numColBlocks; ++blockCol) {
+                        uint32_t j = blockCol * blockCols;
+                        matmul_dot_inner<DataType, regsA, regsB>(
+                            K,
+                            &a[i * lda], lda,
+                            &b[j], ldb,
+                            &result[i * ldc + j], ldc
+                        );
+                    }
+                }
+
+                if (tid == 0) {
+                    for (uint32_t i = M - M % regsA; i < M; ++i)
+                        for (uint32_t j = 0; j < N; ++j)
+                            for (uint32_t k = 0; k < K; ++k)
+                                result[i * ldc + j] += a[i * lda + k] * b[k * ldb + j];
+        
+        
+                    for (uint32_t i = 0; i <= M - regsA; i += regsA)
+                        for (uint32_t j = N - N % blockCols; j < N; ++j)
+                            for (uint32_t k = 0; k < K; ++k)
+                                for (uint32_t ii = 0; ii < regsA; ++ii)
+                                    result[(i + ii) * ldc + j] += a[(i + ii) * lda + k] * b[k * ldb + j];
+                }
+            });
+        }
+
+        for (auto it = threads.begin(); it < threads.end(); ++it) {
+            (*it).join();
+        }
+        
         return result;
     }
 };
