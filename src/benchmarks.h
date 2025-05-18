@@ -31,20 +31,11 @@ public:
         return m_averageExecutionTime;
     }
 protected:
-    virtual void setUp() 
-    {
-        return;
-    }
+    virtual void setUp() { return; }
 
-    virtual void compute() 
-    {
-        return;
-    };
+    virtual void compute() { return; };
 
-    const double &getAvgExecutionTime() 
-    {
-        return m_averageExecutionTime;
-    }
+    const double &getAvgExecutionTime() { return m_averageExecutionTime; }
 
     double m_averageExecutionTime = 0;
 };
@@ -54,12 +45,14 @@ class Benchmark : protected Runner {
 public: 
     Benchmark(std::string_view name) : m_name(name) {}    
 
-    void measure() {
+    void measure() 
+    {
         run<Derived::taskCount>();
         std::cout << describe();
     };
 private:
-    std::string describe() const {
+    std::string describe() const 
+    {
         std::stringstream os;
         os << m_name << '\n';
         os << "{\n";
@@ -70,9 +63,7 @@ private:
         return os.str();
     }
 protected: 
-    virtual std::string getExtraInfo() const {
-        return "";
-    }
+    virtual std::string getExtraInfo() const { return ""; }
 
     std::string_view m_name;
 };
@@ -117,7 +108,8 @@ public:
 protected:
     void compute() override 
     {
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 4; ++i) 
+        {
             threadPool.enqueue([]{ std::cout << ""; });
         }
     }

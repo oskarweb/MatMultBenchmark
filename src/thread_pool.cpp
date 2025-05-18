@@ -1,9 +1,13 @@
 #include "thread_pool.h"
 
-ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
-    for (size_t i = 0; i < numThreads; ++i) {
-        workers.emplace_back([this]() {
-            while (true) {
+ThreadPool::ThreadPool(size_t numThreads) : stop(false) 
+{
+    for (size_t i = 0; i < numThreads; ++i) 
+    {
+        workers.emplace_back([this]() 
+        {
+            while (true) 
+            {
                 std::function<void()> task;
                 {
                     std::unique_lock<std::mutex> lock(this->queueMutex);

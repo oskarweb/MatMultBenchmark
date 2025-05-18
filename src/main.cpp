@@ -11,7 +11,8 @@
 #define CHECK_ERROR(err, msg) if (err != CL_SUCCESS) { std::cerr << msg << ": " << err << std::endl; exit(1); }
 
 
-int main() {
+int main() 
+{
 //     const int N = 1024;
 //     std::vector<float> A(N, 1.0f), B(N, 2.0f), C(N);
 

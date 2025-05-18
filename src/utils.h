@@ -22,9 +22,12 @@ concept ElementIterable =
 
 
 template<typename DataType, uint32_t Rows, uint32_t Columns>
-std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns> &m) {
-    for (int i = 0; i < Rows; ++i) {
-        for (int j = 0; j < Columns; ++j) {
+std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns> &m) 
+{
+    for (int i = 0; i < Rows; ++i) 
+    {
+        for (int j = 0; j < Columns; ++j) 
+        {
             os << m(i, j) << " ";
         }
         if (i < (Rows - 1))
@@ -34,6 +37,7 @@ std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns>
 }
 
 template <typename T, typename... Rest>
-bool allEqual(const T& first, const Rest&... rest) {
+bool allEqual(const T& first, const Rest&... rest) 
+{
     return ((first == rest) && ...);
 }

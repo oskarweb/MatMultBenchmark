@@ -11,7 +11,8 @@ public:
     ThreadPool(size_t numThreads);
     
     template<class F, class... Args>
-    void enqueue(F&& f, Args&&... args) {
+    void enqueue(F&& f, Args&&... args) 
+    {
         auto boundTask = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
         {
             std::unique_lock<std::mutex> lock(queueMutex);

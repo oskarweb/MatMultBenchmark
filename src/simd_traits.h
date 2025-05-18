@@ -7,7 +7,8 @@ template <typename T>
 struct SimdTraits;
 
 template <>
-struct SimdTraits<float> {
+struct SimdTraits<float> 
+{
     using vec = __m256;
     static constexpr int width = 8;
     static vec load(const float *ptr) { return _mm256_loadu_ps(ptr); }
@@ -18,7 +19,8 @@ struct SimdTraits<float> {
 };
 
 template <>
-struct SimdTraits<double> {
+struct SimdTraits<double> 
+{
     using vec = __m256d;
     static constexpr int width = 4;
     static vec load(const double *ptr) { return _mm256_loadu_pd(ptr); }
@@ -29,7 +31,8 @@ struct SimdTraits<double> {
 };
 
 template <>
-struct SimdTraits<int32_t> {
+struct SimdTraits<int32_t> 
+{
     using vec = __m256i;
     static constexpr int width = 8;
     static vec load(const int32_t *ptr) { return _mm256_loadu_si256((__m256i*)ptr); }
@@ -40,7 +43,8 @@ struct SimdTraits<int32_t> {
 };
 
 template <>
-struct SimdTraits<uint32_t> {
+struct SimdTraits<uint32_t> 
+{
     using vec = __m256i;
     static constexpr int width = 8;
     static vec load(const uint32_t *ptr) { return _mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr)); }
