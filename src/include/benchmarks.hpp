@@ -1,7 +1,9 @@
 #pragma once
 
-#include "matrix.h"
-#include "thread_pool.h"
+#include "constants.hpp"
+#include "matrix.hpp"
+#include "thread_pool.hpp"
+#include "utils.hpp"
 
 #include <algorithm>
 #include <array>
@@ -11,6 +13,10 @@
 #include <numeric>
 #include <sstream>
 #include <string_view>
+
+namespace Benchmarks 
+{
+inline constexpr const uint32_t DEFAULT_TASK_COUNT = 32;
 
 class Runner 
 {
@@ -43,7 +49,9 @@ protected:
 template<typename Derived>
 class Benchmark : protected Runner {
 public: 
-    Benchmark(std::string_view name) : m_name(name) {}    
+    static inline constexpr const uint32_t DEFAULT_TASK_COUNT = 10;
+
+    Benchmark(std::string name) : m_name(name) {}    
 
     void measure() 
     {
@@ -65,45 +73,54 @@ private:
 protected: 
     virtual std::string getExtraInfo() const { return ""; }
 
-    std::string_view m_name;
+    std::string m_name;
 };
 
-template<typename T, uint32_t Order = 2, uint32_t TaskCount = 1>
-class MatMultBench : public Benchmark<MatMultBench<T, Order, TaskCount>>  {
+template<typename T, 
+    uint32_t Rows = constants::DEFAULT_MATRIX_ORDER, 
+    uint32_t Columns = constants::DEFAULT_MATRIX_ORDER,
+    MultiplicationType MultType = MultiplicationType::Naive, 
+    uint32_t TaskCount = DEFAULT_TASK_COUNT>
+class MatMultBench : public Benchmark<MatMultBench<T, Rows, Columns, MultType, TaskCount>>  {
 public:
     static constexpr uint32_t taskCount = TaskCount;
+
+    MatMultBench() : Benchmark<MatMultBench>(util::to_string(MultType)) {}  
 protected:
-    MatMultBench(std::string_view name) : Benchmark<MatMultBench>(name) {}  
-    
     void setUp() override 
     {
-        m_matA = genRandomMatrix<T, Order>();
-        m_matB = genRandomMatrix<T, Order>();
+        m_matA.randomFill();
+        m_matB.randomFill();
     }
 
-    std::array<std::array<T, Order>, Order> m_matA;
-    std::array<std::array<T, Order>, Order> m_matB;
-    std::array<std::array<T, Order>, Order> m_matC;
-};
-
-template<typename T, uint32_t Order = 2, uint32_t TaskCount = 1>
-class SeqCpuMatMultBench : public MatMultBench<T, Order, TaskCount>
-{
-public: 
-    SeqCpuMatMultBench(std::string_view name) : MatMultBench<T, Order, TaskCount>(name) {}  
-protected:
-    void compute() override 
+    void compute() override
     {
-        this->m_matC = matMult(this->m_matA, this->m_matB);
+        m_matC = m_matA.mult<MultType>(m_matB);
     }
+
+    std::string getExtraInfo() const override 
+    {
+        std::stringstream os;
+        os << "Data type: " << typeid(T).name() << '\n';
+        os << "Result dims: " << Columns << " x " << Rows << '\n';
+        return os.str();
+    }
+
+    Matrix<T, Rows, Columns> m_matA;
+    Matrix<T, Rows, Columns> m_matB;
+    Matrix<T, Columns, Rows> m_matC;
 };
 
-template<typename T, uint32_t Order = 2, uint32_t TaskCount = 1>
-class ParCpuMatMultBench : public MatMultBench<T, Order, TaskCount>
+template<typename T, 
+    uint32_t Rows = constants::DEFAULT_MATRIX_ORDER, 
+    uint32_t Columns = constants::DEFAULT_MATRIX_ORDER,
+    MultiplicationType MultType = MultiplicationType::Naive, 
+    uint32_t TaskCount = DEFAULT_TASK_COUNT>
+class ParCpuMatMultBench : public MatMultBench<T, Rows, Columns, MultType, TaskCount>
 {
 public: 
-    ParCpuMatMultBench(std::string_view name) : 
-        MatMultBench<T, Order, TaskCount>(name),
+    ParCpuMatMultBench(std::string name) : 
+        MatMultBench<T, Rows, Columns, MultType, TaskCount>(name),
         threadPool(std::max(std::jthread::hardware_concurrency(), 4u)) {}  
 protected:
     void compute() override 
@@ -116,3 +133,18 @@ protected:
 
     ThreadPool threadPool;
 };
+
+
+template <MultiplicationType... MultTypes>
+constexpr int runMatrixMultTypes() {
+    (MatMultBench<
+        uint32_t,
+        constants::DEFAULT_MATRIX_ORDER,
+        constants::DEFAULT_MATRIX_ORDER,
+        MultTypes,
+        DEFAULT_TASK_COUNT
+    >().measure(), ...);
+    return 0;
+}
+
+} // namespace Benchmarks

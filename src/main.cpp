@@ -1,6 +1,6 @@
 #define CL_TARGET_OPENCL_VERSION 300
 
-#include "benchmarks.h"
+#include "benchmarks.hpp"
 
 #include <CL/cl.h>
 
@@ -85,31 +85,19 @@ int main()
 //     clReleaseContext(context);
 
 //     std::cin.get();
-    SeqCpuMatMultBench<uint64_t, 100u, 10u> cpuSeqBench1("CpuSeqBench(1)");
-    cpuSeqBench1.measure();
-    ParCpuMatMultBench<uint64_t, 100u, 1u> cpuParBench1("CpuParBench(1)");
-    cpuParBench1.measure();
-
-    Matrix<uint32_t, 64, 64> a{};
-    Matrix<uint32_t, 64, 64> b{};
-
-    a.randomFill(0, 1);
-    b.randomFill(0, 1);
-
-    // std::cout << a << '\n';
-    // std::cout << b << '\n';
-
-    Matrix Res1 = a.mult<MultType::Naive>(b);
-    Matrix Res2 = a.mult<MultType::Simd>(b);
-    Matrix Res3 = a.mult<MultType::MultithreadRow>(b);
-    Matrix Res4 = a.mult<MultType::MultithreadElement>(b);
-    Matrix Res5 = a.mult<MultType::MultithreadSimd>(b);
+    int result = Benchmarks::runMatrixMultTypes<
+        MultiplicationType::Naive,
+        MultiplicationType::Simd,
+        MultiplicationType::MultithreadRow,
+        MultiplicationType::MultithreadElement,
+        MultiplicationType::MultithreadSimd
+    >();
     // std::cout << "RES 1: " << '\n';
     // std::cout << Res4 << '\n';
     // std::cout << "RES 2: " << '\n';
     // std::cout << Res5 << '\n';
 
-    assert(allEqual(Res1, Res2, Res3, Res4, Res5));
+    // assert(allEqual(Res1, Res2, Res3, Res4, Res5));
 
-    return 0;
+    return result;
 }

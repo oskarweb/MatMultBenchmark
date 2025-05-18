@@ -1,4 +1,4 @@
-#include "thread_pool.h"
+#include "thread_pool.hpp"
 
 ThreadPool::ThreadPool(size_t numThreads) : stop(false) 
 {

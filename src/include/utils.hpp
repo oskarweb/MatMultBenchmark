@@ -7,6 +7,11 @@
 template<typename DataType, uint32_t Rows, uint32_t Columns>
 class Matrix;
 
+enum class MultiplicationType;
+
+namespace util 
+{
+
 template<typename T>
 concept ElementIterable =
     std::ranges::range<T> &&
@@ -40,4 +45,8 @@ template <typename T, typename... Rest>
 bool allEqual(const T& first, const Rest&... rest) 
 {
     return ((first == rest) && ...);
+}
+
+std::string to_string(MultiplicationType type);
+
 }

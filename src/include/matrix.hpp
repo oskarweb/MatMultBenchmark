@@ -1,7 +1,8 @@
 #pragma once
 
-#include "utils.h"
-#include "simd_traits.h"
+#include "constants.hpp"
+#include "utils.hpp"
+#include "simd_traits.hpp"
 
 #include <algorithm>
 #include <array>
@@ -17,7 +18,7 @@ concept CompatibleMatrices = (MatrixA::Columns == MatrixB::Rows);
 template<typename MatrixA, typename MatrixB>
 concept EqualDims = (MatrixA::Rows == MatrixB::Rows) && (MatrixA::Columns == MatrixB::Columns);
 
-enum class MultType 
+enum class MultiplicationType 
 {
     Naive = 0,
     Simd,
@@ -26,11 +27,13 @@ enum class MultType
     MultithreadSimd,
 };
 
-template<typename DataType = uint32_t, uint32_t _Rows = 2, uint32_t _Cols = 2>
+template<typename DataType = uint32_t, 
+    uint32_t _Rows = constants::DEFAULT_MATRIX_ORDER, 
+    uint32_t _Cols = constants::DEFAULT_MATRIX_ORDER>
 class Matrix 
 { 
 public:
-    template <MultType, typename MatrixA, typename MatrixB>
+    template <MultiplicationType, typename MatrixA, typename MatrixB>
     struct MatrixMultImpl;
     
     constexpr const static uint32_t Rows = _Rows;
@@ -40,11 +43,11 @@ public:
 
     Matrix() : Matrix(static_cast<DataType>(0)) {}
 
-    template<MultType multType, typename OtherMatrix>
+    template<MultiplicationType MultType, typename OtherMatrix>
     requires CompatibleMatrices<Matrix<DataType, Rows, Columns>, OtherMatrix>
     Matrix<DataType, Rows, OtherMatrix::Columns> mult(const OtherMatrix& other) const 
     {
-        return MatrixMultImpl<multType, Matrix, OtherMatrix>::multiply(*this, other);
+        return MatrixMultImpl<MultType, Matrix, OtherMatrix>::multiply(*this, other);
     }
 
     void randomFill(DataType min, DataType max) 
@@ -120,7 +123,7 @@ void matmul_dot_inner(int k, const T* a, int lda, const T* b, int ldb, T* c, int
 
 template <typename DataType, uint32_t Rows, uint32_t Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Naive, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -144,7 +147,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Naive, MatrixA,
 
 template <typename DataType, uint32_t Rows, uint32_t Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Simd, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Simd, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -191,7 +194,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::Simd, MatrixA, 
 
 template <typename DataType, uint32_t Rows, uint32_t Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadRow, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadRow, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -228,7 +231,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadRow,
 
 template <typename DataType, uint32_t Rows, uint32_t Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadElement, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadElement, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -265,7 +268,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadElem
 
 template <typename DataType, uint32_t Rows, uint32_t Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadSimd, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadSimd, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -343,7 +346,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultType::MultithreadSimd
     }
 };
 
-template<ElementIterable T, typename D>
+template<util::ElementIterable T, typename D>
 std::vector<std::vector<D>> matMult(const T &matA, const T &matB) 
 {
     if (matA[0].size() != matB.size()) 
@@ -408,7 +411,7 @@ std::array<std::array<T, Order>, Order> genRandomMatrix()
     return mat;
 }
 
-template<ElementIterable T>
+template<util::ElementIterable T>
 void printMatrix(const T& mat)
 {
     for (auto row_it = mat.begin(); row_it != mat.end(); ++row_it)
