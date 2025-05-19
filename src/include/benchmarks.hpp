@@ -108,7 +108,7 @@ protected:
 
     Matrix<T, Rows, Columns> m_matA;
     Matrix<T, Rows, Columns> m_matB;
-    Matrix<T, Columns, Rows> m_matC;
+    Matrix<T, Rows, Columns> m_matC;
 };
 
 template<typename T, 

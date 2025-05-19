@@ -27,6 +27,17 @@ enum class MultiplicationType
     MultithreadSimd,
 };
 
+template<typename T, size_t Size>
+struct MatrixStorage {
+    static constexpr bool stackAllocation = (sizeof(T) * Size <= STACK_SIZE / 100);
+
+    using type = std::conditional_t<
+        stackAllocation,
+        std::array<T, Size>,
+        std::vector<T>
+    >;
+};
+
 template<typename DataType = uint32_t, 
     uint32_t _Rows = constants::DEFAULT_MATRIX_ORDER, 
     uint32_t _Cols = constants::DEFAULT_MATRIX_ORDER>
@@ -38,8 +49,20 @@ public:
     
     constexpr const static uint32_t Rows = _Rows;
     constexpr const static uint32_t Columns = _Cols;
+    constexpr const static uint32_t Size = Rows * Columns;
 
-    Matrix(DataType value) { std::ranges::fill(m_data, value); }
+    using Storage = typename MatrixStorage<DataType, Size>::type;
+
+    Matrix(DataType value)
+     {
+        if constexpr (std::is_same_v<Storage, std::vector<DataType>>) 
+        {
+            m_data.resize(Size, value);
+        } else 
+        {
+            std::ranges::fill(m_data, value);
+        }
+    }
 
     Matrix() : Matrix(static_cast<DataType>(0)) {}
 
@@ -83,7 +106,7 @@ public:
     requires EqualDims<Matrix<DataType, Rows, Columns>, OtherMatrix>
     bool operator==(const OtherMatrix &other) const { return std::ranges::equal(this->m_data, other.data()); }
 private:
-    std::array<DataType, Rows * Columns> m_data;
+    Storage m_data;
 };
 
 #define A(i,j) a[(i) * lda + (j)]

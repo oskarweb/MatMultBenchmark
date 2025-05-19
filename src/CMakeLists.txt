@@ -10,7 +10,11 @@ list(APPEND SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp"
 )
 
-add_library(OclDemoLib ${HEADERS} ${SOURCES})
-add_library(OclDemo::Lib ALIAS OclDemoLib)
+set(LIB_NAME "OclDemoLib")
 
-target_include_directories(OclDemoLib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(${LIB_NAME} ${HEADERS} ${SOURCES})
+add_library(OclDemo::Lib ALIAS ${LIB_NAME})
+
+target_include_directories(${LIB_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+set(ALL_TARGETS ${ALL_TARGETS} ${LIB_NAME} CACHE INTERNAL "All targets")

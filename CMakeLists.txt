@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 set(PROJECT_NAME "OclDemo")
 
+set(ALL_TARGETS ${PROJECT_NAME} CACHE INTERNAL "All targets")
+
 if(WIN32)
     set(HOME "$ENV{USERPROFILE}")
 else()
@@ -43,3 +45,7 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE OpenCL::OpenCL
     PRIVATE OclDemo::Lib
 )
+
+foreach(TARGET IN LISTS ALL_TARGETS)
+    target_compile_definitions(${TARGET} PRIVATE STACK_SIZE=${STACK_SIZE})
+endforeach()
