@@ -14,19 +14,24 @@ project(${PROJECT_NAME} VERSION 1.0)
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
-set(STACK_SIZE "1000000" CACHE STRING "Stack size in bytes")
-
-message(STATUS "Stack size: ${STACK_SIZE} bytes")
-
-if(MSVC)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:${STACK_SIZE}")
+if(WIN32)
+    set(STACK_SIZE "1000000" CACHE STRING "Stack size in bytes")
+    message(STATUS "Stack size: ${STACK_SIZE} bytes")
     add_compile_options(/W4 /WX /permissive-)
+    if(MSVC)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:${STACK_SIZE}")
+    else()
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,${STACK_SIZE}")
+    endif()
 else()
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--stack,${STACK_SIZE}")
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
-set(CMAKE_PREFIX_PATH "${HOME}/OpenCL_SDK")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif()
+
+# set(CMAKE_PREFIX_PATH "${HOME}/OpenCL_SDK")
 
 set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/third_party")
 
