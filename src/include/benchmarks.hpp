@@ -9,6 +9,7 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <format>
 #include <iostream>
 #include <numeric>
 #include <sstream>
@@ -61,14 +62,12 @@ public:
 private:
     std::string describe() const 
     {
-        std::stringstream os;
-        os << m_name << '\n';
-        os << "{\n";
-        os << std::left << std::setw(30) << "\ttime(s) executed: " << Derived::taskCount << '\n';
-        os << std::left << std::setw(30) << "\taverage execution time: " << m_averageExecutionTime << "s\n";
-        os << getExtraInfo();
-        os << "}\n";
-        return os.str();
+        std::string result;
+        result += "Ran: " + m_name + "\n{\n";
+        result += std::format("{:<30}{}\n", "\tTime(s) executed:", Derived::taskCount);
+        result += std::format("{:<30}{}\n", "\tAvg. execution time:", m_averageExecutionTime);
+        result += getExtraInfo() + "}\n";
+        return result;
     }
 protected: 
     virtual std::string getExtraInfo() const { return ""; }
@@ -85,7 +84,7 @@ class MatMultBench : public Benchmark<MatMultBench<T, Rows, Columns, MultType, T
 public:
     static constexpr uint32_t taskCount = TaskCount;
 
-    MatMultBench() : Benchmark<MatMultBench>(util::to_string(MultType)) {}  
+    MatMultBench() : Benchmark<MatMultBench>("Matrix mult " + util::to_string(MultType)) {}  
 protected:
     void setUp() override 
     {
@@ -100,10 +99,13 @@ protected:
 
     std::string getExtraInfo() const override 
     {
-        std::stringstream os;
-        os << std::left << std::setw(30) << "Data type: " << typeid(T).name() << '\n';
-        os << std::left << std::setw(30) << "Result dims: " << Columns << " x " << Rows << '\n';
-        return os.str();
+        std::string dims = std::format("{} x {}", Columns, Rows);
+    
+        std::string result;
+        result += std::format("{:<30}{}\n", "\tData type:", typeid(T).name());
+        result += std::format("{:<30}{}\n", "\tResult dims:", dims);
+
+        return result;
     }
 
     Matrix<T, Rows, Columns> m_matA;
