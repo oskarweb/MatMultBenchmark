@@ -86,13 +86,7 @@ int main()
 //     clReleaseContext(context);
 
 //     std::cin.get();
-    int result = Benchmarks::runMatrixMultTypes<
-        MultiplicationType::Naive,
-        MultiplicationType::Simd,
-        MultiplicationType::MultithreadRow,
-        MultiplicationType::MultithreadElement,
-        MultiplicationType::MultithreadSimd
-    >();
+    int result = Benchmarks::runAllMatrixMultTypesWithDataTypes<uint32_t, float>();
     // std::cout << "RES 1: " << '\n';
     // std::cout << Res4 << '\n';
     // std::cout << "RES 2: " << '\n';

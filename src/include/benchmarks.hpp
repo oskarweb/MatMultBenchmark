@@ -16,7 +16,7 @@
 
 namespace Benchmarks 
 {
-inline constexpr const uint32_t DEFAULT_TASK_COUNT = 32;
+inline constexpr const uint32_t DEFAULT_TASK_COUNT = 5;
 
 class Runner 
 {
@@ -101,8 +101,8 @@ protected:
     std::string getExtraInfo() const override 
     {
         std::stringstream os;
-        os << "Data type: " << typeid(T).name() << '\n';
-        os << "Result dims: " << Columns << " x " << Rows << '\n';
+        os << std::left << std::setw(30) << "Data type: " << typeid(T).name() << '\n';
+        os << std::left << std::setw(30) << "Result dims: " << Columns << " x " << Rows << '\n';
         return os.str();
     }
 
@@ -135,15 +135,29 @@ protected:
 };
 
 
-template <MultiplicationType... MultTypes>
-constexpr int runMatrixMultTypes() {
-    (MatMultBench<
-        uint32_t,
+
+template <typename DataType, MultiplicationType... MultTypes>
+int runMatrixMultTypes()
+{
+    ((MatMultBench<
+        DataType,
         constants::DEFAULT_MATRIX_ORDER,
         constants::DEFAULT_MATRIX_ORDER,
         MultTypes,
-        DEFAULT_TASK_COUNT
-    >().measure(), ...);
+        DEFAULT_TASK_COUNT>().measure()), ...);
+    return 0;
+}
+
+
+template <typename... DataTypes>
+int runAllMatrixMultTypesWithDataTypes() 
+{
+    ((runMatrixMultTypes<DataTypes,
+        MultiplicationType::Naive,
+        MultiplicationType::Simd,
+        MultiplicationType::MultithreadRow,
+        MultiplicationType::MultithreadElement,
+        MultiplicationType::MultithreadSimd>()), ...);
     return 0;
 }
 
