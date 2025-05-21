@@ -125,7 +125,7 @@ class ParCpuMatMultBench : public MatMultBench<T, Rows, Columns, MultType, TaskC
 public: 
     ParCpuMatMultBench(std::string name) : 
         MatMultBench<T, Rows, Columns, MultType, TaskCount>(name),
-        threadPool(std::max(std::jthread::hardware_concurrency(), 4u)) {}  
+        threadPool(std::max(std::thread::hardware_concurrency(), 4u)) {}  
 protected:
     void compute() override 
     {

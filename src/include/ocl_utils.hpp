@@ -64,7 +64,7 @@ public:
         err = clGetPlatformIDs(1, &platform, nullptr);
         CHECK_CL_ERROR(err, "clGetPlatformIDs");
         
-        err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, nullptr);
+        err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 1, &device, nullptr);
         CHECK_CL_ERROR(err, "clGetDeviceIDs");
 
         context = clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);

@@ -4,6 +4,7 @@ import sys
 import argparse
 from pathlib import Path
 import os
+import platform
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -24,10 +25,14 @@ def process_command_line():
     setup_parser(parser)
     return parser.parse_args()
 
+# TODO: Add clDevice types option, improve options
+
 def build_project(build_directory, jobs=None, target=None, build_type=None, stack_size=None):
     os.chdir(PROJECT_DIR)
     options = f"-DSTACK_SIZE={stack_size}" if stack_size else ""
     cmd = f"cmake {options} -B {build_directory} -S ."
+    if platform.system() == "Linux":
+        cmd += " -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18"
     logger.info("CMake command line: %s", cmd)
     process = subprocess.run(
         cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

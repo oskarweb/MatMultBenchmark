@@ -30,7 +30,7 @@ enum class MultiplicationType
 
 template<typename T, size_t Size>
 struct MatrixStorage {
-    static constexpr bool stackAllocation = (sizeof(T) * Size <= STACK_SIZE / 100);
+    static constexpr bool stackAllocation = (sizeof(T) * Size <= constants::getStackSize() / 100);
 
     using type = std::conditional_t<
         stackAllocation,

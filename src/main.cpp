@@ -14,7 +14,7 @@
 
 int main() 
 {
-    std::cout << "Stack size: " << STACK_SIZE << " bytes\n";
+    std::cout << "Stack size: " << constants::getStackSize() << " bytes\n";
     const int N = 1024;
     std::vector<float> A(N, 1.0f), B(N, 2.0f), C(N);
 
