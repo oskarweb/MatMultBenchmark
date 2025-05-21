@@ -25,6 +25,7 @@ enum class MultiplicationType
     MultithreadRow,
     MultithreadElement,
     MultithreadSimd,
+    NaiveOcl
 };
 
 template<typename T, size_t Size>
@@ -143,6 +144,10 @@ void matmul_dot_inner(int k, const T* a, int lda, const T* b, int ldb, T* c, int
         }
     }
 }
+
+#undef A
+#undef B
+#undef C
 
 template <typename DataType, uint32_t Rows, uint32_t Columns>
 template <typename MatrixA, typename MatrixB>
@@ -365,6 +370,30 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
             (*it).join();
         }
         
+        return result;
+    }
+};
+
+template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename MatrixA, typename MatrixB>
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::NaiveOcl, MatrixA, MatrixB> 
+{
+    static auto multiply(const MatrixA& a, const MatrixB& b) 
+    {
+        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        ResultMatrix result;
+
+        for (uint32_t i = 0; i < MatrixA::Rows; ++i) 
+        {
+            for (uint32_t j = 0; j < MatrixB::Columns; ++j) 
+            {
+                for (uint32_t k = 0; k < MatrixA::Columns; ++k) 
+                {
+                    result(i, j) += a(i, k) * b(k, j);
+                }
+            }
+        }
+
         return result;
     }
 };

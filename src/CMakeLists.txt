@@ -1,6 +1,7 @@
 list(APPEND HEADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/include/benchmarks.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/matrix.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/ocl_utils.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/thread_pool.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/include/utils.hpp"
 )

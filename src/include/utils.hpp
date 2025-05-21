@@ -62,6 +62,21 @@ inline void appendLabelValue(std::string &str, const labelType &label, const val
         value
     );
 }
+//     cl_platform_id platform;
+//     cl_device_id device;
+//     cl_int err;
+
+//     err = clGetPlatformIDs(1, &platform, nullptr);
+//     CHECK_ERROR(err, "Failed to get platform");
+
+//     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, nullptr);
+//     CHECK_ERROR(err, "Failed to get device");
+
+//     cl_context context = clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
+//     CHECK_ERROR(err, "Failed to create context");
+
+//     cl_command_queue queue = clCreateCommandQueueWithProperties(context, device, 0, &err);
+//     CHECK_ERROR(err, "Failed to create queue");
 
 std::string to_string(MultiplicationType type);
 } // namespace util
