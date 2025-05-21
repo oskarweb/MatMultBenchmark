@@ -4,5 +4,5 @@
 
 namespace constants 
 {
-    inline constexpr const uint32_t DEFAULT_MATRIX_ORDER = 128;
+inline constexpr const uint32_t DEFAULT_MATRIX_ORDER = 128;
 }

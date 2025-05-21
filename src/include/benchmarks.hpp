@@ -63,10 +63,12 @@ private:
     std::string describe() const 
     {
         std::string result;
+
         result += "Ran: " + m_name + "\n{\n";
-        result += std::format("{:<30}{}\n", "\tTime(s) executed:", Derived::taskCount);
-        result += std::format("{:<30}{}\n", "\tAvg. execution time:", m_averageExecutionTime);
+        util::appendLabelValue(result, "Time(s) executed:", Derived::taskCount);
+        util::appendLabelValue(result, "Avg. execution time:", m_averageExecutionTime);
         result += getExtraInfo() + "}\n";
+
         return result;
     }
 protected: 
@@ -99,11 +101,11 @@ protected:
 
     std::string getExtraInfo() const override 
     {
-        std::string dims = std::format("{} x {}", Columns, Rows);
-    
         std::string result;
-        result += std::format("{:<30}{}\n", "\tData type:", typeid(T).name());
-        result += std::format("{:<30}{}\n", "\tResult dims:", dims);
+        std::string dims = std::format("{} x {}", Columns, Rows);
+
+        util::appendLabelValue(result, "Data type:", typeid(T).name());
+        util::appendLabelValue(result, "Result dims:", dims);
 
         return result;
     }

@@ -1,8 +1,11 @@
 #pragma once
 
 #include <algorithm>
+#include <format>
 #include <iostream>
 #include <ranges>
+#include <string>
+#include <string_view>
 
 template<typename DataType, uint32_t Rows, uint32_t Columns>
 class Matrix;
@@ -11,6 +14,7 @@ enum class MultiplicationType;
 
 namespace util 
 {
+inline constexpr std::string_view labelValueFormat = "\t{:<30}{}\n";
 
 template<typename T>
 concept ElementIterable =
@@ -42,11 +46,22 @@ std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns>
 }
 
 template <typename T, typename... Rest>
-bool allEqual(const T& first, const Rest&... rest) 
+inline bool allEqual(const T& first, const Rest&... rest) 
 {
     return ((first == rest) && ...);
 }
 
-std::string to_string(MultiplicationType type);
-
+template<typename labelType, typename valueType>
+inline void appendLabelValue(std::string &str, const labelType &label, const valueType &value)
+{
+    std::format_to
+    (
+        std::back_inserter(str), 
+        labelValueFormat,
+        label,
+        value
+    );
 }
+
+std::string to_string(MultiplicationType type);
+} // namespace util
