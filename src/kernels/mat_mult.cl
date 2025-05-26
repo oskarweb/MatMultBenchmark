@@ -1,4 +1,4 @@
-__kernel void naive_mat_mul(
+__kernel void naive_mat_mult(
     __global float* A,
     __global float* B,
     __global float* C,

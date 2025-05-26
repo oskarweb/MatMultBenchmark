@@ -15,9 +15,12 @@ project(${PROJECT_NAME} VERSION 1.0)
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 if(WIN32)
+    set(CMAKE_PREFIX_PATH "${HOME}/OpenCL_SDK")
+    
     set(STACK_SIZE "1000000" CACHE STRING "Stack size in bytes")
     message(STATUS "Stack size: ${STACK_SIZE} bytes")
     add_compile_options(/W4 /WX /permissive-)
+    
     if(MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:${STACK_SIZE}")
     else()
@@ -31,7 +34,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
-# set(CMAKE_PREFIX_PATH "${HOME}/OpenCL_SDK")
 
 set(THIRD_PARTY_DIR "${CMAKE_SOURCE_DIR}/third_party")
 
@@ -54,3 +56,13 @@ target_link_libraries(${PROJECT_NAME}
 foreach(TARGET IN LISTS ALL_TARGETS)
     target_compile_definitions(${TARGET} PRIVATE STACK_SIZE=${STACK_SIZE})
 endforeach()
+
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/src/kernels
+            ${CMAKE_BINARY_DIR}/kernels
+    COMMENT "Copying kernels directory to build directory"
+)
+
+make_directory(${CMAKE_BINARY_DIR}/kernels/bin)

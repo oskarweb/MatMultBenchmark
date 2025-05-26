@@ -1,9 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <filesystem>
 #include <format>
+#include <fstream>
 #include <iostream>
+#include <memory>
 #include <ranges>
+#include <sstream>
 #include <string>
 #include <string_view>
 
@@ -62,21 +66,72 @@ inline void appendLabelValue(std::string &str, const labelType &label, const val
         value
     );
 }
-//     cl_platform_id platform;
-//     cl_device_id device;
-//     cl_int err;
 
-//     err = clGetPlatformIDs(1, &platform, nullptr);
-//     CHECK_ERROR(err, "Failed to get platform");
+inline std::unique_ptr<char[]> loadDataFromFile(std::filesystem::path filename, size_t *dataSize = nullptr) {
+    if (!std::filesystem::exists(filename)) {
+        std::cerr << "File does not exist: " << filename << std::endl;
+    }
+    std::ifstream file(filename, std::ios::binary);
+    if (!file) throw std::runtime_error("Failed to open file");
 
-//     err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, nullptr);
-//     CHECK_ERROR(err, "Failed to get device");
+    std::stringstream ss;
+    ss << file.rdbuf();
+    std::string str = ss.str();
+    
+    size_t size = str.size() + 1;
 
-//     cl_context context = clCreateContext(nullptr, 1, &device, nullptr, nullptr, &err);
-//     CHECK_ERROR(err, "Failed to create context");
+    if (dataSize) 
+        *dataSize = size;
 
-//     cl_command_queue queue = clCreateCommandQueueWithProperties(context, device, 0, &err);
-//     CHECK_ERROR(err, "Failed to create queue");
+    auto buffer = std::make_unique<char[]>(size);
+    std::memcpy(buffer.get(), str.c_str(), size);
+
+    file.close();
+    if (!file) throw std::runtime_error("Failed to close file");
+
+    return buffer;
+}
+
+inline std::unique_ptr<unsigned char[]> loadDataFromBinaryFile(std::filesystem::path filename, size_t *dataSize = nullptr) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!std::filesystem::exists(filename)) {
+        std::cerr << "File does not exist: " << filename << std::endl;
+    }
+    if (!file) throw std::runtime_error("Failed to open file");
+
+    std::stringstream ss;
+    ss << file.rdbuf();
+    std::string str = ss.str();
+
+    size_t size = str.size() + 1;
+
+    if (dataSize) 
+        *dataSize = size;
+
+    auto buffer = std::make_unique<unsigned char[]>(size);
+    std::memcpy(buffer.get(), str.c_str(), size);
+
+    file.close();
+    if (!file) throw std::runtime_error("Failed to close file");
+
+    return buffer;
+}
+
+inline void writeDataToFile(std::filesystem::path filename, const unsigned char *data, size_t dataSize)
+{
+    std::ofstream file(filename, std::ios::binary);
+    std::cerr << "Current working directory: " << std::filesystem::current_path() << std::endl;
+    if (!std::filesystem::exists(filename)) {
+        std::cerr << "File does not exist: " << filename << std::endl;
+    }
+    if (!file) throw std::runtime_error("Failed to open file");
+    
+    file.write(reinterpret_cast<const char*>(data), dataSize);
+    if (!file) throw std::runtime_error("Failed to write data to file");
+
+    file.close();
+    if (!file) throw std::runtime_error("Failed to close file");
+}
 
 std::string to_string(MultiplicationType type);
 } // namespace util

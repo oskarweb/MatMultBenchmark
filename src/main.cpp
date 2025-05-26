@@ -18,14 +18,21 @@ int main()
     const int N = 1024;
     std::vector<float> A(N, 1.0f), B(N, 2.0f), C(N);
 
-    const char *kernelSource = R"(__kernel void vector_add(__global const float* A,
-    __global const float* B,
-    __global float* C) {
-int id = get_global_id(0);
-C[id] = A[id] + B[id];
-})";
+//     const char *kernelSource = R"(__kernel void vector_add(__global const float* A,
+//     __global const float* B,
+//     __global float* C) {
+// int id = get_global_id(0);
+// C[id] = A[id] + B[id];
+// })";
 
-    oclUtil::ProgramWithQueue program(kernelSource, "vector_add");
+    oclUtil::ProgramWithQueue program("test.cl");
+    program.initialize();
+    program.build(nullptr);
+    program.compileBinary();
+    program.reset();
+    program.initialize();
+    program.loadFromBinary();
+    program.createQueueAndKernel("vector_add");
 
     cl_int err;
 

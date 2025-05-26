@@ -383,6 +383,8 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
 
+        // oclUtil::ProgramWithQueue
+
         for (uint32_t i = 0; i < MatrixA::Rows; ++i) 
         {
             for (uint32_t j = 0; j < MatrixB::Columns; ++j) 
