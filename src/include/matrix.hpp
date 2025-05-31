@@ -1,8 +1,11 @@
 #pragma once
 
 #include "constants.hpp"
+#include "ocl_utils.hpp"
 #include "utils.hpp"
 #include "simd_traits.hpp"
+
+#include <CL/cl.h>
 
 #include <algorithm>
 #include <array>
@@ -94,8 +97,8 @@ public:
 
     void randomFill() { randomFill(static_cast<DataType>(0), static_cast<DataType>(100)); }
 
-    std::array<DataType, Rows * Columns> &data() { return m_data; }
-    const std::array<DataType, Rows * Columns> &data() const { return m_data; }
+    Storage &data() { return m_data; }
+    const Storage &data() const { return m_data; }
 
     DataType &operator()(size_t i, size_t j) { return m_data[i * Columns + j]; }
     const DataType &operator()(size_t i, size_t j) const { return m_data[i * Columns + j]; }
@@ -382,19 +385,62 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive
     {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
+        cl_int err;
+        
+        oclUtil::ProgramWithQueue program{"mat_mult.cl"};
+        program.initialize();
+        program.loadFromBinary();
+        program.createQueueAndKernel("naive_mat_mult");
 
-        // oclUtil::ProgramWithQueue
+        oclUtil::memWrapper bufA = clCreateBuffer(program.getContext(),
+                                                  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                                                  sizeof(DataType) * MatrixA::Size,
+                                                  const_cast<DataType*>(a.data().data()), 
+                                                  &err);
+        CHECK_CL_ERROR(err, "clCreateBuffer");
 
-        for (uint32_t i = 0; i < MatrixA::Rows; ++i) 
-        {
-            for (uint32_t j = 0; j < MatrixB::Columns; ++j) 
-            {
-                for (uint32_t k = 0; k < MatrixA::Columns; ++k) 
-                {
-                    result(i, j) += a(i, k) * b(k, j);
-                }
-            }
-        }
+        oclUtil::memWrapper bufB = clCreateBuffer(program.getContext(), 
+                                                  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
+                                                  sizeof(DataType) * MatrixB::Size, 
+                                                  const_cast<DataType*>(b.data().data()), 
+                                                  &err);
+        CHECK_CL_ERROR(err, "clCreateBuffer");
+
+        oclUtil::memWrapper bufC = clCreateBuffer(program.getContext(), 
+                                                  CL_MEM_WRITE_ONLY, 
+                                                  sizeof(DataType) * ResultMatrix::Size, 
+                                                  nullptr, 
+                                                  &err);
+        CHECK_CL_ERROR(err, "clCreateBuffer");
+    
+        clSetKernelArg(program.getKernel(), 0, sizeof(cl_mem), &bufA);
+        clSetKernelArg(program.getKernel(), 1, sizeof(cl_mem), &bufB);
+        clSetKernelArg(program.getKernel(), 2, sizeof(cl_mem), &bufC);
+        clSetKernelArg(program.getKernel(), 3, sizeof(uint32_t), &MatrixA::Rows);
+        clSetKernelArg(program.getKernel(), 4, sizeof(uint32_t), &MatrixA::Columns);
+        clSetKernelArg(program.getKernel(), 5, sizeof(uint32_t), &ResultMatrix::Columns);
+
+        const size_t globalWorkSize[2] = {ResultMatrix::Rows, ResultMatrix::Columns};
+        err = clEnqueueNDRangeKernel(program.getCmdQueue(), 
+                                     program.getKernel(), 
+                                     2, 
+                                     nullptr, 
+                                     globalWorkSize, 
+                                     nullptr, 
+                                     0, 
+                                     nullptr, 
+                                     nullptr);
+        CHECK_CL_ERROR(err, "clEnqueueNDRangeKernel");
+    
+        clEnqueueReadBuffer(program.getCmdQueue(), 
+                            bufC, 
+                            CL_TRUE, 
+                            0, 
+                            sizeof(DataType) * ResultMatrix::Size, 
+                            result.data().data(), 
+                            0, 
+                            nullptr,
+                            nullptr);
 
         return result;
     }

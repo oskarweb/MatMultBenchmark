@@ -1,5 +1,3 @@
-#define CL_TARGET_OPENCL_VERSION 300
-
 #include "benchmarks.hpp"
 #include "ocl_utils.hpp"
 
@@ -28,7 +26,7 @@ int main()
     oclUtil::ProgramWithQueue program("test.cl");
     program.initialize();
     program.build(nullptr);
-    program.compileBinary();
+    program.saveBinary();
     program.reset();
     program.initialize();
     program.loadFromBinary();
@@ -53,9 +51,9 @@ int main()
     for (int i = 0; i < 10; ++i)
         std::cout << "C[" << i << "] = " << C[i] << std::endl;
 
-    std::cin.get();
+    // std::cin.get();
 
-    // int result = Benchmarks::runAllMatrixMultTypesWithDataTypes<uint32_t, float>();
+    Benchmarks::runAllMatrixMultTypesWithDataTypes<float>();
     // std::cout << "RES 1: " << '\n';
     // std::cout << Res4 << '\n';
     // std::cout << "RES 2: " << '\n';

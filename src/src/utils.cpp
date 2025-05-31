@@ -18,6 +18,8 @@ std::string to_string(MultiplicationType type)
             return "MultithreadElement";
         case MultiplicationType::MultithreadSimd:   
             return "MultithreadSimd";
+        case MultiplicationType::NaiveOcl:   
+            return "NaiveOcl";
         default:                                    
             return "Unknown";
     }
