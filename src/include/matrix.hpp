@@ -15,6 +15,9 @@
 #include <thread>
 #include <vector>
 
+template<typename Mat>
+concept ValidDims = (Mat::Columns > 1) && (Mat::Rows > 1);
+
 template<typename MatrixA, typename MatrixB>
 concept CompatibleMatrices = (MatrixA::Columns == MatrixB::Rows);
 
@@ -42,23 +45,25 @@ struct MatrixStorage {
     >;
 };
 
-template<typename DataType = uint32_t, 
-    uint32_t _Rows = constants::DEFAULT_MATRIX_ORDER, 
-    uint32_t _Cols = constants::DEFAULT_MATRIX_ORDER>
+template<typename DataType = int, 
+    int _Rows = constants::DEFAULT_MATRIX_ORDER, 
+    int _Cols = constants::DEFAULT_MATRIX_ORDER>
 class Matrix 
 { 
 public:
     template <MultiplicationType, typename MatrixA, typename MatrixB>
     struct MatrixMultImpl;
     
-    constexpr const static uint32_t Rows = _Rows;
-    constexpr const static uint32_t Columns = _Cols;
-    constexpr const static uint32_t Size = Rows * Columns;
+    constexpr const static int Rows = _Rows;
+    constexpr const static int Columns = _Cols;
+    constexpr const static int Size = Rows * Columns;
 
     using Storage = typename MatrixStorage<DataType, Size>::type;
 
+    template<typename T = void>
+    requires ValidDims<Matrix>
     Matrix(DataType value)
-     {
+    {
         if constexpr (std::is_same_v<Storage, std::vector<DataType>>) 
         {
             m_data.resize(Size, value);
@@ -68,6 +73,8 @@ public:
         }
     }
 
+    template<typename T = void>
+    requires ValidDims<Matrix>
     Matrix() : Matrix(static_cast<DataType>(0)) {}
 
     template<MultiplicationType MultType, typename OtherMatrix>
@@ -152,7 +159,7 @@ void matmul_dot_inner(int k, const T* a, int lda, const T* b, int ldb, T* c, int
 #undef B
 #undef C
 
-template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
 struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive, MatrixA, MatrixB> 
 {
@@ -161,11 +168,11 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
 
-        for (uint32_t i = 0; i < MatrixA::Rows; ++i) 
+        for (int i = 0; i < MatrixA::Rows; ++i) 
         {
-            for (uint32_t j = 0; j < MatrixB::Columns; ++j) 
+            for (int j = 0; j < MatrixB::Columns; ++j) 
             {
-                for (uint32_t k = 0; k < MatrixA::Columns; ++k) 
+                for (int k = 0; k < MatrixA::Columns; ++k) 
                 {
                     result(i, j) += a(i, k) * b(k, j);
                 }
@@ -176,7 +183,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive
     }
 };
 
-template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
 struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Simd, MatrixA, MatrixB> 
 {
@@ -184,15 +191,15 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Simd,
     {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
-        constexpr uint32_t regsA = 3;
-        constexpr uint32_t regsB = 4;
-        constexpr uint32_t blockCols = regsB * SimdTraits<DataType>::width;
-        constexpr uint32_t M = MatrixA::Rows; // = 32 - 3 = 29    (M - RA) % RA == 0 
-        constexpr uint32_t N = MatrixB::Columns; // = 32 - 32 = 0
-        constexpr uint32_t K = MatrixA::Columns;
-        constexpr uint32_t lda = MatrixA::Columns;
-        constexpr uint32_t ldb = MatrixB::Columns;
-        constexpr uint32_t ldc = MatrixB::Columns;
+        constexpr int regsA = 3;
+        constexpr int regsB = 4;
+        constexpr int blockCols = regsB * SimdTraits<DataType>::width;
+        constexpr int M = MatrixA::Rows;
+        constexpr int N = MatrixB::Columns;
+        constexpr int K = MatrixA::Columns;
+        constexpr int lda = MatrixA::Columns;
+        constexpr int ldb = MatrixB::Columns;
+        constexpr int ldc = MatrixB::Columns;
 
         for (int i = 0; i <= M - regsA; i += regsA) 
         {
@@ -207,23 +214,22 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Simd,
             }
         }
 
-        for (uint32_t i = M - M % regsA; i < M; ++i)
-            for (uint32_t j = 0; j < N; ++j)
-                for (uint32_t k = 0; k < K; ++k)
+        for (int i = M - M % regsA; i < M; ++i)
+            for (int j = 0; j < N; ++j)
+                for (int k = 0; k < K; ++k)
                     result[i * ldc + j] += a[i * lda + k] * b[k * ldb + j];
 
-
-        for (uint32_t i = 0; i <= M - regsA; i += regsA)
-            for (uint32_t j = N - N % blockCols; j < N; ++j)
-                for (uint32_t k = 0; k < K; ++k)
-                    for (uint32_t ii = 0; ii < regsA; ++ii)
+        for (int i = 0; i <= M - regsA; i += regsA)
+            for (int j = N - N % blockCols; j < N; ++j)
+                for (int k = 0; k < K; ++k)
+                    for (int ii = 0; ii < regsA; ++ii)
                         result[(i + ii) * ldc + j] += a[(i + ii) * lda + k] * b[k * ldb + j];
         
         return result;
     }
 };
 
-template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
 struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadRow, MatrixA, MatrixB> 
 {
@@ -231,19 +237,19 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
     {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
-        constexpr uint32_t M = MatrixA::Rows;
-        constexpr uint32_t N = MatrixB::Columns;
-        constexpr uint32_t K = MatrixA::Columns;
+        constexpr int M = MatrixA::Rows;
+        constexpr int N = MatrixB::Columns;
+        constexpr int K = MatrixA::Columns;
 
         std::array<std::thread, M> threads;
 
-        for(uint32_t i = 0; i < M; ++i) 
+        for(int i = 0; i < M; ++i) 
         {
             threads[i] = std::thread([&a, &b, &result, i] ()
             {
-                for (uint32_t j = 0; j < N; ++j) 
+                for (int j = 0; j < N; ++j) 
                 {
-                    for (uint32_t k = 0; k < K; ++k)
+                    for (int k = 0; k < K; ++k)
                     {
                         result[i * N + j] += a[i * K + k] * b[k * N + j];
                     }
@@ -260,7 +266,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
     }
 };
 
-template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
 struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadElement, MatrixA, MatrixB> 
 {
@@ -268,19 +274,19 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
     {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
-        constexpr uint32_t M = MatrixA::Rows;
-        constexpr uint32_t N = MatrixB::Columns;
-        constexpr uint32_t K = MatrixA::Columns;
+        constexpr int M = MatrixA::Rows;
+        constexpr int N = MatrixB::Columns;
+        constexpr int K = MatrixA::Columns;
 
         std::array<std::thread, M * N> threads;
 
-        for(uint32_t i = 0; i < M; ++i) 
+        for(int i = 0; i < M; ++i) 
         {
-            for (uint32_t j = 0; j < N; ++j) 
+            for (int j = 0; j < N; ++j) 
             {
-                threads[i * K + j] = std::thread([&a, &b, &result, i, j] () 
+                threads[i * N + j] = std::thread([&a, &b, &result, i, j] () 
                 {
-                    for (uint32_t k = 0; k < K; ++k)
+                    for (int k = 0; k < K; ++k)
                     {
                         result[i * N + j] += a[i * K + k] * b[k * N + j];
                     }
@@ -297,7 +303,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
     }
 };
 
-template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
 struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadSimd, MatrixA, MatrixB> 
 {
@@ -305,43 +311,43 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
     {
         using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
-        constexpr uint32_t regsA = 3;
-        constexpr uint32_t regsB = 4;
-        constexpr uint32_t blockCols = regsB * SimdTraits<DataType>::width;
-        constexpr uint32_t M = MatrixA::Rows;
-        constexpr uint32_t N = MatrixB::Columns;
-        constexpr uint32_t K = MatrixA::Columns;
-        constexpr uint32_t lda = MatrixA::Columns;
-        constexpr uint32_t ldb = MatrixB::Columns;
-        constexpr uint32_t ldc = MatrixB::Columns;
-        constexpr uint32_t numRowBlocks = M / regsA;
-        constexpr uint32_t numColBlocks = N / blockCols;
+        constexpr int regsA = 3;
+        constexpr int regsB = 4;
+        constexpr int blockCols = regsB * SimdTraits<DataType>::width;
+        constexpr int M = MatrixA::Rows;
+        constexpr int N = MatrixB::Columns;
+        constexpr int K = MatrixA::Columns;
+        constexpr int lda = MatrixA::Columns;
+        constexpr int ldb = MatrixB::Columns;
+        constexpr int ldc = MatrixB::Columns;
+        constexpr int numRowBlocks = M / regsA;
+        constexpr int numColBlocks = N / blockCols;
         
-        const uint32_t threadCount = std::max(4u, std::thread::hardware_concurrency());
+        const int threadCount = std::max(4u, std::thread::hardware_concurrency());
         std::vector<std::thread> threads(threadCount);
 
-        std::vector<uint32_t> startRows(threadCount + 1);
-        uint32_t blocksPerThreadBase = numRowBlocks / threadCount;
-        uint32_t blocksPerThreadRemainder = numRowBlocks % threadCount;
-        for (uint32_t tid = 0; tid < startRows.size(); tid++)
+        std::vector<int> startRows(threadCount + 1);
+        int blocksPerThreadBase = numRowBlocks / threadCount;
+        int blocksPerThreadRemainder = numRowBlocks % threadCount;
+        for (int tid = 0; tid < startRows.size(); tid++)
         {
             startRows[tid] = tid * blocksPerThreadBase + std::min(tid, blocksPerThreadRemainder);
         }
         startRows[threadCount] = numRowBlocks;
 
-        for (uint32_t tid = 0; tid < threadCount; ++tid) 
+        for (int tid = 0; tid < threadCount; ++tid) 
         {
             threads[tid] = std::thread([tid, &startRows, &a, &b, &result, lda, ldb, ldc]() 
             {
-                uint32_t startRow = startRows[tid];
-                uint32_t endRow = startRows[tid + 1];
+                int startRow = startRows[tid];
+                int endRow = startRows[tid + 1];
             
-                for (uint32_t blockRow = startRow; blockRow < endRow; ++blockRow) 
+                for (int blockRow = startRow; blockRow < endRow; ++blockRow) 
                 {
-                    uint32_t i = blockRow * regsA;
-                    for (uint32_t blockCol = 0; blockCol < numColBlocks; ++blockCol) 
+                    int i = blockRow * regsA;
+                    for (int blockCol = 0; blockCol < numColBlocks; ++blockCol) 
                     {
-                        uint32_t j = blockCol * blockCols;
+                        int j = blockCol * blockCols;
                         matmul_dot_inner<DataType, regsA, regsB>(
                             K,
                             &a[i * lda], lda,
@@ -353,16 +359,16 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
 
                 if (tid == 0) 
                 {
-                    for (uint32_t i = M - M % regsA; i < M; ++i)
-                        for (uint32_t j = 0; j < N; ++j)
-                            for (uint32_t k = 0; k < K; ++k)
+                    for (int i = M - M % regsA; i < M; ++i)
+                        for (int j = 0; j < N; ++j)
+                            for (int k = 0; k < K; ++k)
                                 result[i * ldc + j] += a[i * lda + k] * b[k * ldb + j];
         
         
-                    for (uint32_t i = 0; i <= M - regsA; i += regsA)
-                        for (uint32_t j = N - N % blockCols; j < N; ++j)
-                            for (uint32_t k = 0; k < K; ++k)
-                                for (uint32_t ii = 0; ii < regsA; ++ii)
+                    for (int i = 0; i <= M - regsA; i += regsA)
+                        for (int j = N - N % blockCols; j < N; ++j)
+                            for (int k = 0; k < K; ++k)
+                                for (int ii = 0; ii < regsA; ++ii)
                                     result[(i + ii) * ldc + j] += a[(i + ii) * lda + k] * b[k * ldb + j];
                 }
             });
@@ -377,7 +383,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
     }
 };
 
-template <typename DataType, uint32_t Rows, uint32_t Columns>
+template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
 struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::NaiveOcl, MatrixA, MatrixB> 
 {
@@ -416,9 +422,9 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive
         clSetKernelArg(program.getKernel(), 0, sizeof(cl_mem), &bufA);
         clSetKernelArg(program.getKernel(), 1, sizeof(cl_mem), &bufB);
         clSetKernelArg(program.getKernel(), 2, sizeof(cl_mem), &bufC);
-        clSetKernelArg(program.getKernel(), 3, sizeof(uint32_t), &MatrixA::Rows);
-        clSetKernelArg(program.getKernel(), 4, sizeof(uint32_t), &MatrixA::Columns);
-        clSetKernelArg(program.getKernel(), 5, sizeof(uint32_t), &ResultMatrix::Columns);
+        clSetKernelArg(program.getKernel(), 3, sizeof(int), &MatrixA::Rows);
+        clSetKernelArg(program.getKernel(), 4, sizeof(int), &MatrixA::Columns);
+        clSetKernelArg(program.getKernel(), 5, sizeof(int), &ResultMatrix::Columns);
 
         const size_t globalWorkSize[2] = {ResultMatrix::Rows, ResultMatrix::Columns};
         err = clEnqueueNDRangeKernel(program.getCmdQueue(), 
@@ -497,7 +503,7 @@ std::array<std::array<D, Order>, Order> matMult(
     return matC;
 }
 
-template<typename T, uint32_t Order = 2>
+template<typename T, int Order = 2>
 std::array<std::array<T, Order>, Order> genRandomMatrix() 
 {
     static std::mt19937 gen(1);

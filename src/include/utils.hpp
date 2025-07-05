@@ -11,10 +11,25 @@
 #include <string>
 #include <string_view>
 
-template<typename DataType, uint32_t Rows, uint32_t Columns>
+template<typename DataType, int Rows, int Columns>
 class Matrix;
 
 enum class MultiplicationType;
+
+template<typename DataType, int Rows, int Columns>
+std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns> &m) 
+{
+    for (int i = 0; i < Rows; ++i) 
+    {
+        for (int j = 0; j < Columns; ++j) 
+        {
+            os << m(i, j) << " ";
+        }
+        if (i < (Rows - 1))
+            os << "\n";
+    }
+    return os;
+}
 
 namespace util 
 {
@@ -32,22 +47,6 @@ concept ElementIterable =
     {
         { elem.size() } -> std::same_as<std::size_t>;
     };
-
-
-template<typename DataType, uint32_t Rows, uint32_t Columns>
-std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns> &m) 
-{
-    for (int i = 0; i < Rows; ++i) 
-    {
-        for (int j = 0; j < Columns; ++j) 
-        {
-            os << m(i, j) << " ";
-        }
-        if (i < (Rows - 1))
-            os << "\n";
-    }
-    return os;
-}
 
 template <typename T, typename... Rest>
 inline bool allEqual(const T& first, const Rest&... rest) 
@@ -120,7 +119,7 @@ inline std::unique_ptr<unsigned char[]> loadDataFromBinaryFile(std::filesystem::
 inline void writeDataToFile(std::filesystem::path filename, const unsigned char *data, size_t dataSize)
 {
     std::ofstream file(filename, std::ios::binary);
-    std::cerr << "Current working directory: " << std::filesystem::current_path() << std::endl;
+    // std::cerr << "Current working directory: " << std::filesystem::current_path() << std::endl;
     if (!std::filesystem::exists(filename)) {
         std::cerr << "File does not exist: " << filename << std::endl;
     }

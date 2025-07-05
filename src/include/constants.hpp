@@ -12,7 +12,7 @@ namespace constants
     inline constexpr std::size_t getStackSize() { return 1024 * 1024; }
 #endif
 
-inline constexpr const uint32_t DEFAULT_MATRIX_ORDER = 128;
+inline constexpr const int DEFAULT_MATRIX_ORDER = 128;
 
 inline const std::filesystem::path KERNELS_DIR = std::filesystem::path("..") / "kernels";
 inline const std::filesystem::path KERNELS_BIN_DIR = KERNELS_DIR / "bin";
