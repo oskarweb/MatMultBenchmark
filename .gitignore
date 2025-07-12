@@ -396,3 +396,10 @@ FodyWeavers.xsd
 *.sln.iml
 
 build/
+
+# Gradle build artifacts
+gui/JavaFX/build/
+gui/JavaFX/.gradle/
+gui/JavaFX/gradle/
+gui/JavaFX/gradlew
+gui/JavaFX/gradlew.bat
