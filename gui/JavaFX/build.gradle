@@ -10,7 +10,7 @@ repositories {
 
 javafx {
     version = '21'
-    modules = [ 'javafx.controls' ]
+    modules = [ 'javafx.controls', 'javafx.fxml' ]
 }
 
 application {
@@ -24,3 +24,17 @@ jlink {
         name = 'matmultbench'
     }
 }
+
+task copyBenchmarks(type: Copy) {
+    into "$buildDir"
+
+    from('../../build/debug/OclDemo.exe') {
+        into 'benchmarks/bin'
+    }
+
+    from('../../build/kernels') {
+        into 'benchmarks/kernels'
+    }
+}
+
+jar.dependsOn(copyBenchmarks)
