@@ -6,6 +6,8 @@
 #include "thread_pool.hpp"
 #include "utils.hpp"
 
+#include <boost/json.hpp>
+
 #include <algorithm>
 #include <array>
 #include <chrono>

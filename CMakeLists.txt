@@ -41,6 +41,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(OpenCL REQUIRED)
+find_package(Boost REQUIRED COMPONENTS json CONFIG)
 
 set(SRC_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
@@ -48,9 +49,12 @@ add_subdirectory(${SRC_DIRECTORY})
 
 add_executable(${PROJECT_NAME} ${SRC_DIRECTORY}/main.cpp)
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE OpenCL::OpenCL
     PRIVATE OclDemo::Lib
+    PRIVATE Boost::json
 )
 
 foreach(TARGET IN LISTS ALL_TARGETS)

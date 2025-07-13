@@ -19,6 +19,9 @@ def setup_parser(root_parser):
     root_parser.add_argument("--target", help="target to build")
     root_parser.add_argument("--build-type", help="CMake build type to use")
     root_parser.add_argument("--stack-size", type=int, help="stack size to use")
+    root_parser.add_argument(
+        "--boost-dir", help="path to Boost directory"
+    )
 
 def process_command_line():
     parser = argparse.ArgumentParser(prog="build")
@@ -27,12 +30,15 @@ def process_command_line():
 
 # TODO: Add clDevice types option, improve options
 
-def build_project(build_directory, jobs=None, target=None, build_type=None, stack_size=None):
+def build_project(build_directory, jobs=None, target=None, build_type=None, stack_size=None, boost_dir=None):
     os.chdir(PROJECT_DIR)
-    options = f"-DSTACK_SIZE={stack_size}" if stack_size else ""
-    cmd = f"cmake {options} -B {build_directory} -S ."
+    options = ""
+    options += f" -DSTACK_SIZE={stack_size}" if stack_size else ""
+    options += f" -DBoost_DIR={boost_dir}" if boost_dir else ""
     if platform.system() == "Linux":
-        cmd += " -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18"
+        options += " -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18"
+    cmd = f"cmake {options} -B {build_directory} -S ."
+    print(f"Boost_DIR:{boost_dir}")
     logger.info("CMake command line: %s", cmd)
     process = subprocess.run(
         cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
@@ -62,7 +68,14 @@ def main(args=None):
     logger.debug("Arguments: %s", args)
 
     try:
-        build_project(args.build_directory, args.jobs, args.target, args.build_type, args.stack_size)
+        build_project(
+            args.build_directory, 
+            args.jobs, 
+            args.target, 
+            args.build_type,
+            args.stack_size, 
+            args.boost_dir
+        )
     except:
         logger.exception("Fatal error")
         return -1

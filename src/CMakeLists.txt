@@ -18,8 +18,12 @@ add_library(OclDemo::Lib ALIAS ${LIB_NAME})
 
 target_link_libraries(${LIB_NAME}
     PRIVATE OpenCL::OpenCL
+    PRIVATE Boost::json
 )
 
-target_include_directories(${LIB_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(${LIB_NAME} PUBLIC 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include 
+    ${Boost_INCLUDE_DIRS}
+)
 
 set(ALL_TARGETS ${ALL_TARGETS} ${LIB_NAME} CACHE INTERNAL "All targets")
