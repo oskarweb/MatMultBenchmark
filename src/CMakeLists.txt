@@ -1,25 +1,22 @@
-list(APPEND HEADERS
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/benchmarks.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/matrix.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/ocl_utils.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/thread_pool.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/include/utils.hpp"
-)
-
-list(APPEND SOURCES
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/thread_pool.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cpp"
-)
+file(GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")
+file(GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
 set(LIB_NAME "OclDemoLib")
 
 add_library(${LIB_NAME} ${HEADERS} ${SOURCES})
 add_library(OclDemo::Lib ALIAS ${LIB_NAME})
 
+set(BOOST_COMPONENTS json)
+
+find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS} CONFIG)
+
 target_link_libraries(${LIB_NAME}
     PRIVATE OpenCL::OpenCL
-    PRIVATE Boost::json
 )
+
+foreach(component IN LISTS BOOST_COMPONENTS)
+    target_link_libraries(${LIB_NAME} PRIVATE Boost::${component})
+endforeach()
 
 target_include_directories(${LIB_NAME} PUBLIC 
     ${CMAKE_CURRENT_SOURCE_DIR}/include 
