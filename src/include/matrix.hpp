@@ -84,9 +84,9 @@ public:
         return MatrixMultImpl<MultType, Matrix, OtherMatrix>::multiply(*this, other);
     }
 
-    void randomFill(DataType min, DataType max) 
+    void randomFill(DataType min, DataType max, unsigned int seed) 
     {
-        static std::mt19937 gen(1);
+        static std::mt19937 gen(seed);
 
         if constexpr (std::is_integral_v<DataType>)
         {
@@ -102,7 +102,8 @@ public:
         }
     }
 
-    void randomFill() { randomFill(static_cast<DataType>(0), static_cast<DataType>(100)); }
+    void randomFill() { randomFill(static_cast<DataType>(0), static_cast<DataType>(100), 1u); }
+    void randomFill(unsigned int seed) { randomFill(static_cast<DataType>(0), static_cast<DataType>(100), seed); }
 
     Storage &data() { return m_data; }
     const Storage &data() const { return m_data; }

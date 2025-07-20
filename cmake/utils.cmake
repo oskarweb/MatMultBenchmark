@@ -1,0 +1,7 @@
+function(link_boost target components)
+    find_package(Boost REQUIRED COMPONENTS ${components})
+    foreach(component IN LISTS components)
+        target_link_libraries(${target} PRIVATE Boost::${component})
+    endforeach()
+    target_include_directories(${target} PRIVATE ${Boost_INCLUDE_DIRS})
+endfunction()
