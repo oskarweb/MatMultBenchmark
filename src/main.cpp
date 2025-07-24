@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 
     // std::cin.get();
 
-    // Benchmarks::runAllMatrixMultTypesWithDataTypes<uint32_t, float>();
+    Benchmarks::runAllMatrixMultTypesWithDataTypes<uint32_t>();
     // std::cout << "RES 1: " << '\n';
     // std::cout << Res4 << '\n';
     // std::cout << "RES 2: " << '\n';
@@ -65,22 +65,22 @@ int main(int argc, char *argv[])
 
     // assert(allEqual(Res1, Res2, Res3, Res4, Res5));
 
-    // Matrix<uint32_t, 32, 32> mat1{};
-    // mat1.randomFill();
-    // Matrix<uint32_t, 32, 32> mat2{};
-    // mat2.randomFill();
-    // auto res1 = mat1.mult<MultiplicationType::Naive>(mat2);
-    // // std::cout << "Res1: " << '\n' << res1;
-    // auto res2 = mat1.mult<MultiplicationType::Naive>(mat2);
-    // // std::cout << "\nRes2: " << '\n' << res2;
-    // auto res3 = mat1.mult<MultiplicationType::Simd>(mat2);
-    // // std::cout << "\nRes3: " << '\n' << res3;
-    // auto res4 = mat1.mult<MultiplicationType::MultithreadSimd>(mat2);
-    // // std::cout << "\nRes4: " << '\n' << res4;
-    // auto res5 = mat1.mult<MultiplicationType::MultithreadElement>(mat2);
-    // // std::cout << "\nRes5: " << '\n' << res5;
-    // auto res6 = mat1.mult<MultiplicationType::MultithreadRow>(mat2);
-    // // std::cout << "\nRes6: " << '\n' << res6;
+    Matrix<uint32_t, 128, 128> mat1{};
+    mat1.randomFill();
+    Matrix<uint32_t, 128, 128> mat2{};
+    mat2.randomFill();
+    auto res1 = mat1.mult<MatMultType::Naive>(mat2);
+    // std::cout << "Res1: " << '\n' << res1;
+    auto res2 = mat1.mult<MatMultType::Simd>(mat2);
+    // std::cout << "\nRes2: " << '\n' << res2;
+    //auto res3 = mat1.mult<MatMultType::MultithreadElement>(mat2);
+    // std::cout << "\nRes3: " << '\n' << res3;
+    //auto res4 = mat1.mult<MatMultType::MultithreadRow>(mat2);
+    // std::cout << "\nRes4: " << '\n' << res4;
+    auto res5 = mat1.mult<MatMultType::MultithreadSimd>(mat2);
+    // std::cout << "\nRes5: " << '\n' << res5;
+    auto res6 = mat1.mult<MatMultType::NaiveOcl>(mat2);
+    // std::cout << "\nRes6: " << '\n' << res6;
     try {
         boost_po::options_description desc("Allowed options");
         desc.add_options()
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     }
 
 
-    // assert(util::allEqual(res1, res2, res3, res4, res5, res6));
+    assert(util::allEqual(res1, res2, res5, res6));
 
     // return result;
     return 0;

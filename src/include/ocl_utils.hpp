@@ -306,15 +306,23 @@ public:
     {
         m_kernel.reset();
         m_queue.reset();
+        m_kernelArgIndex = 0;
         Program::reset();
+    }
+
+    template<typename T>
+    void setKernelArg(T &arg) 
+    {
+        clSetKernelArg(m_kernel.get(), m_kernelArgIndex++, sizeof(T), &arg);
     }
 
     cl_kernel getKernel() { return m_kernel.get(); }
     cl_command_queue getCmdQueue() { return m_queue.get(); }
-private:
+protected:
     kernelWrapper m_kernel;
     cmdQueueWrapper m_queue;
     std::string m_kernelName;
+    uint32_t m_kernelArgIndex = 0;
 };
 
 template<typename T>

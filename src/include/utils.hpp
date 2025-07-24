@@ -14,7 +14,7 @@
 template<typename DataType, int Rows, int Columns>
 class Matrix;
 
-enum class MultiplicationType;
+enum class MatMultType;
 
 template<typename DataType, int Rows, int Columns>
 std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns> &m) 
@@ -132,5 +132,5 @@ inline void writeDataToFile(std::filesystem::path filename, const unsigned char 
     if (!file) throw std::runtime_error("Failed to close file");
 }
 
-std::string to_string(MultiplicationType type);
+std::string to_string(MatMultType type);
 } // namespace util

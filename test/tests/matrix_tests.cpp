@@ -1,11 +1,12 @@
 #include "test_utils.hpp"
 
+#include "constants.hpp"
 #include "matrix.hpp"
-
-#include <gtest/gtest.h>
+#include "ocl_utils.hpp"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/operation.hpp>
+#include <gtest/gtest.h>
 
 #include <ranges>
 
@@ -13,7 +14,7 @@
     MatrixParams<T, 2, 2>,                          \
     MatrixParams<T, 4, 4>,                          \
     MatrixParams<T, 32, 32>,                        \
-    MatrixParams<T, 128, 128>
+    MatrixParams<T, 256, 256>
 
 template<typename T>
 void randomfillBoostMatrix(boost::numeric::ublas::matrix<T>& mat, T min, T max)
@@ -49,13 +50,12 @@ public:
 
     Matrix<DataType, Rows, Cols> testedA;
     Matrix<DataType, Rows, Cols> testedB;
-    Matrix<DataType, Rows, Cols> testedC;
 
     boost::numeric::ublas::matrix<DataType> expectedA;
     boost::numeric::ublas::matrix<DataType> expectedB;
-    boost::numeric::ublas::matrix<DataType> expectedC;
+    boost::numeric::ublas::matrix<DataType> expectedResultMatrix;
 
-    MatrixMultFixture() : expectedA(Rows, Cols), expectedB(Rows, Cols), expectedC(Rows, Cols) {}
+    MatrixMultFixture() : expectedA(Rows, Cols), expectedB(Rows, Cols), expectedResultMatrix(Rows, Cols) {}
 
     void SetUp() override 
     {
@@ -64,18 +64,75 @@ public:
 
         std::ranges::copy(expectedA.data(), testedA.data().begin());
         std::ranges::copy(expectedB.data(), testedB.data().begin());
+
+        this->expectedResultMatrix = boost::numeric::ublas::prod(this->expectedA, this->expectedB);
+    }
+
+    template<MatMultType MultType>
+    void run()
+    {
+        auto resultMatrix = this->testedA.mult<MultType>(this->testedB);
+
+        for (size_t i = 0; i < this->expectedResultMatrix.size1(); ++i) 
+        {
+            for (size_t j = 0; j < this->expectedResultMatrix.size2(); ++j)
+            {
+                if constexpr(std::is_floating_point_v<DataType>) 
+                {
+                    ASSERT_NEAR(resultMatrix(i, j), this->expectedResultMatrix(i, j), 1);
+                }
+                else
+                {
+                    ASSERT_EQ(resultMatrix(i, j), this->expectedResultMatrix(i, j));
+                }
+            }
+        }
     }
 };
 
-using TestedMatrixCombinations = ::testing::Types<
+template <typename Param>
+struct MatrixMultFixtureOcl : public MatrixMultFixture<Param>
+{
+    using DataType = typename Param::DataType;
+
+    void SetUp() override 
+    {
+        oclUtil::ProgramWithQueue program("mat_mult.cl");
+        program.initialize();
+        const std::string buildOptions = "-DT=" + oclUtil::getOpenCLTypeName<DataType>();
+        program.build(buildOptions.c_str());
+        program.saveBinary();
+        MatrixMultFixture<Param>::SetUp();
+    }
+};
+
+using TestedMatrixDataTypeCombinations = ::testing::Types<
+    MATRIX_DIMS_FOR_TYPE(int32_t),
+    MATRIX_DIMS_FOR_TYPE(uint32_t),
     MATRIX_DIMS_FOR_TYPE(float),
-    MATRIX_DIMS_FOR_TYPE(double),
-    MATRIX_DIMS_FOR_TYPE(uint32_t)
+    MATRIX_DIMS_FOR_TYPE(double)
 >;
 
-TYPED_TEST_SUITE(MatrixMultFixture, TestedMatrixCombinations);
+TYPED_TEST_SUITE(MatrixMultFixture, TestedMatrixDataTypeCombinations);
 
-TYPED_TEST(MatrixMultFixture, WhenPerformingNaiveMatMultThenReturnCorrectResult)
-{
-    // TODO
+TYPED_TEST_SUITE(MatrixMultFixtureOcl, TestedMatrixDataTypeCombinations);
+
+#define MAT_MULT_TYPED_TEST(MultType)                                                \
+TYPED_TEST(MatrixMultFixture, WhenPerforming##MultType##MultThenReturnCorrectResult) \
+{                                                                                    \
+    this->run<MatMultType::MultType>();                                              \
 }
+
+#define MAT_MULT_TYPED_TEST_OCL(MultType)                                               \
+TYPED_TEST(MatrixMultFixtureOcl, WhenPerforming##MultType##MultThenReturnCorrectResult) \
+{                                                                                       \
+    this->run<MatMultType::MultType>();                                                 \
+}
+
+MAT_MULT_TYPED_TEST(Naive);
+MAT_MULT_TYPED_TEST(Simd);
+MAT_MULT_TYPED_TEST(MultithreadElement);
+MAT_MULT_TYPED_TEST(MultithreadRow);
+MAT_MULT_TYPED_TEST(MultithreadSimd);
+
+MAT_MULT_TYPED_TEST_OCL(NaiveOcl);

@@ -4,21 +4,21 @@
 namespace util
 {
 
-std::string to_string(MultiplicationType type)
+std::string to_string(MatMultType type)
 {
     switch (type) 
     {
-        case MultiplicationType::Naive:             
+        case MatMultType::Naive:             
             return "Naive";
-        case MultiplicationType::Simd:              
+        case MatMultType::Simd:              
             return "Simd";
-        case MultiplicationType::MultithreadRow:    
+        case MatMultType::MultithreadRow:    
             return "MultithreadRow";
-        case MultiplicationType::MultithreadElement:
+        case MatMultType::MultithreadElement:
             return "MultithreadElement";
-        case MultiplicationType::MultithreadSimd:   
+        case MatMultType::MultithreadSimd:   
             return "MultithreadSimd";
-        case MultiplicationType::NaiveOcl:   
+        case MatMultType::NaiveOcl:   
             return "NaiveOcl";
         default:                                    
             return "Unknown";

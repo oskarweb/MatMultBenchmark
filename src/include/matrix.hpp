@@ -24,7 +24,7 @@ concept CompatibleMatrices = (MatrixA::Columns == MatrixB::Rows);
 template<typename MatrixA, typename MatrixB>
 concept EqualDims = (MatrixA::Rows == MatrixB::Rows) && (MatrixA::Columns == MatrixB::Columns);
 
-enum class MultiplicationType 
+enum class MatMultType 
 {
     Naive = 0,
     Simd,
@@ -36,7 +36,7 @@ enum class MultiplicationType
 
 template<typename T, size_t Size>
 struct MatrixStorage {
-    static constexpr bool stackAllocation = (sizeof(T) * Size <= constants::getStackSize() / 100);
+    static constexpr bool stackAllocation = false; // (sizeof(T) * Size <= constants::getStackSize() / 100);
 
     using type = std::conditional_t<
         stackAllocation,
@@ -51,7 +51,7 @@ template<typename DataType = int,
 class Matrix 
 { 
 public:
-    template <MultiplicationType, typename MatrixA, typename MatrixB>
+    template <MatMultType, typename MatrixA, typename MatrixB>
     struct MatrixMultImpl;
     
     constexpr const static int Rows = _Rows;
@@ -77,7 +77,7 @@ public:
     requires ValidDims<Matrix>
     Matrix() : Matrix(static_cast<DataType>(0)) {}
 
-    template<MultiplicationType MultType, typename OtherMatrix>
+    template<MatMultType MultType, typename OtherMatrix>
     requires CompatibleMatrices<Matrix<DataType, Rows, Columns>, OtherMatrix>
     Matrix<DataType, Rows, OtherMatrix::Columns> mult(const OtherMatrix& other) const 
     {
@@ -117,52 +117,54 @@ public:
     template<typename OtherMatrix>
     requires EqualDims<Matrix<DataType, Rows, Columns>, OtherMatrix>
     bool operator==(const OtherMatrix &other) const { return std::ranges::equal(this->m_data, other.data()); }
-private:
-    Storage m_data;
-};
 
 #define A(i,j) a[(i) * lda + (j)]
 #define B(i,j) b[(i) * ldb + (j)]
 #define C(i,j) c[(i) * ldc + (j)]
 
-template <typename T, unsigned RA, unsigned RB>
-void matmul_dot_inner(int k, const T* a, int lda, const T* b, int ldb, T* c, int ldc) 
-{
-    using Simd = SimdTraits<T>;
-    using Vec = typename Simd::vec;
-    constexpr int W = Simd::width;
-
-    Vec csum[RA][RB] = {};
-
-    for (int p = 0; p < k; ++p) 
+    template <typename T, unsigned RA, unsigned RB>
+    static void matmul_dot_inner(int k, const T* a, int lda, const T* b, int ldb, T* c, int ldc) 
     {
-        for (int bi = 0; bi < RB; ++bi) 
+        using Simd = SimdTraits<T>;
+        using Vec = typename Simd::vec;
+        constexpr int W = Simd::width;
+
+        Vec csum[RA][RB] = {};
+
+        for (int p = 0; p < k; ++p) 
         {
-            Vec bb = Simd::load(&B(p, bi * W));
-            for (int ai = 0; ai < RA; ++ai) 
+            for (int bi = 0; bi < RB; ++bi) 
             {
-                Vec aa = Simd::broadcast(A(ai, p));
-                csum[ai][bi] = Simd::add(csum[ai][bi], Simd::mul(aa, bb));
+                Vec bb = Simd::load(&B(p, bi * W));
+                for (int ai = 0; ai < RA; ++ai) 
+                {
+                    Vec aa = Simd::broadcast(A(ai, p));
+                    csum[ai][bi] = Simd::add(csum[ai][bi], Simd::mul(aa, bb));
+                }
+            }
+        }
+
+        for (int ai = 0; ai < RA; ++ai) 
+        {
+            for (int bi = 0; bi < RB; ++bi) 
+            {
+                Simd::store(&C(ai, bi * W), csum[ai][bi]);
             }
         }
     }
-
-    for (int ai = 0; ai < RA; ++ai) 
-    {
-        for (int bi = 0; bi < RB; ++bi) 
-        {
-            Simd::store(&C(ai, bi * W), csum[ai][bi]);
-        }
-    }
-}
 
 #undef A
 #undef B
 #undef C
 
+private:
+    Storage m_data;
+};
+
+
 template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::Naive, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -186,7 +188,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive
 
 template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Simd, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::Simd, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -206,7 +208,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Simd,
         {
             for (int j = 0; j <= N - blockCols; j += blockCols) 
             {
-                matmul_dot_inner<DataType, regsA, regsB>(
+                Matrix<>::matmul_dot_inner<DataType, regsA, regsB>(
                     K,
                     &a[i * lda], lda,
                     &b[j], ldb,
@@ -232,7 +234,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Simd,
 
 template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadRow, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadRow, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -269,7 +271,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
 
 template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadElement, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadElement, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -306,7 +308,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
 
 template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::MultithreadSimd, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadSimd, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -349,7 +351,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
                     for (int blockCol = 0; blockCol < numColBlocks; ++blockCol) 
                     {
                         int j = blockCol * blockCols;
-                        matmul_dot_inner<DataType, regsA, regsB>(
+                        Matrix<>::matmul_dot_inner<DataType, regsA, regsB>(
                             K,
                             &a[i * lda], lda,
                             &b[j], ldb,
@@ -386,7 +388,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Multi
 
 template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::NaiveOcl, MatrixA, MatrixB> 
+struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::NaiveOcl, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
@@ -420,6 +422,13 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MultiplicationType::Naive
                                                   &err);
         CHECK_CL_ERROR(err, "clCreateBuffer");
     
+
+        // program.setKernelArg(bufA);
+        // program.setKernelArg(bufB);
+        // program.setKernelArg(bufC);
+        // program.setKernelArg(MatrixA::Rows);
+        // program.setKernelArg(MatrixA::Columns);
+        // program.setKernelArg(ResultMatrix::Columns);
         clSetKernelArg(program.getKernel(), 0, sizeof(cl_mem), &bufA);
         clSetKernelArg(program.getKernel(), 1, sizeof(cl_mem), &bufB);
         clSetKernelArg(program.getKernel(), 2, sizeof(cl_mem), &bufC);

@@ -90,7 +90,7 @@ protected:
 template<typename DataType, 
     uint32_t Rows = constants::DEFAULT_MATRIX_ORDER, 
     uint32_t Columns = constants::DEFAULT_MATRIX_ORDER,
-    MultiplicationType MultType = MultiplicationType::Naive, 
+    MatMultType MultType = MatMultType::Naive, 
     uint32_t TaskCount = DEFAULT_TASK_COUNT>
 class MatMultBench : public Benchmark<MatMultBench<DataType, Rows, Columns, MultType, TaskCount>>  
 {
@@ -127,12 +127,12 @@ protected:
 };
 
 template<typename DataType, uint32_t Rows, uint32_t Columns, uint32_t TaskCount>
-class MatMultBench<DataType, Rows, Columns, MultiplicationType::NaiveOcl, TaskCount> : public Benchmark<MatMultBench<DataType, Rows, Columns, MultiplicationType::NaiveOcl, TaskCount>>  
+class MatMultBench<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount> : public Benchmark<MatMultBench<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount>>  
 {
 public:
     static constexpr uint32_t taskCount = TaskCount;
 
-    MatMultBench() : Benchmark<MatMultBench>("Matrix mult " + util::to_string(MultiplicationType::NaiveOcl)) {}  
+    MatMultBench() : Benchmark<MatMultBench>("Matrix mult " + util::to_string(MatMultType::NaiveOcl)) {}  
 protected:
     void setUp() override 
     {
@@ -147,7 +147,7 @@ protected:
 
     void compute() override
     {
-        m_matC = m_matA.mult<MultiplicationType::NaiveOcl>(m_matB);
+        m_matC = m_matA.mult<MatMultType::NaiveOcl>(m_matB);
     }
 
     std::string getExtraInfo() const override 
@@ -169,7 +169,7 @@ protected:
 template<typename T, 
     uint32_t Rows = constants::DEFAULT_MATRIX_ORDER, 
     uint32_t Columns = constants::DEFAULT_MATRIX_ORDER,
-    MultiplicationType MultType = MultiplicationType::Naive, 
+    MatMultType MultType = MatMultType::Naive, 
     uint32_t TaskCount = DEFAULT_TASK_COUNT>
 class ParCpuMatMultBench : public MatMultBench<T, Rows, Columns, MultType, TaskCount>
 {
@@ -191,7 +191,7 @@ protected:
 
 
 
-template <typename DataType, MultiplicationType... MultTypes>
+template <typename DataType, MatMultType... MultTypes>
 int runMatrixMultTypes()
 {
     ((MatMultBench<
@@ -208,12 +208,12 @@ template <typename... DataTypes>
 int runAllMatrixMultTypesWithDataTypes() 
 {
     ((runMatrixMultTypes<DataTypes,
-        //MultiplicationType::Naive,
-        //MultiplicationType::Simd,
-        //MultiplicationType::MultithreadRow,
-        //MultiplicationType::MultithreadElement,
-        //MultiplicationType::MultithreadSimd,
-        MultiplicationType::NaiveOcl>()), ...);
+        //MatMultType::Naive,
+        //MatMultType::Simd,
+        //MatMultType::MultithreadRow,
+        //MatMultType::MultithreadElement,
+        //MatMultType::MultithreadSimd,
+        MatMultType::NaiveOcl>()), ...);
     return 0;
 }
 

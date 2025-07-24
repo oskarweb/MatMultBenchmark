@@ -1,9 +1,11 @@
-#define DataType float
+#ifndef T
+#define T float
+#endif
 
 __kernel void naive_mat_mult(
-    __global DataType *A,
-    __global DataType *B,
-    __global DataType *C,
+    __global T *A,
+    __global T *B,
+    __global T *C,
     const uint M,
     const uint N,
     const uint K)
@@ -12,7 +14,7 @@ __kernel void naive_mat_mult(
     uint col = get_global_id(1);
 
     if (row < M && col < K) {
-        DataType sum = 0;
+        T sum = 0;
         for (int i = 0; i < N; i++) {
             sum += A[row * N + i] * B[i * K + col];
         }
