@@ -1,90 +1,9 @@
 #pragma once
 
-#include "constants.hpp"
-#include "matrix.hpp"
-#include "ocl_utils.hpp"
-#include "thread_pool.hpp"
-#include "utils.hpp"
+#include "benchmark.hpp"
 
-#include <boost/json.hpp>
-
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <cstdint>
-#include <format>
-#include <iostream>
-#include <numeric>
-#include <sstream>
-#include <string_view>
-
-namespace Benchmarks 
+namespace Benchmarks
 {
-inline constexpr const uint32_t DEFAULT_TASK_COUNT = 5;
-
-class Runner 
-{
-public:
-    template<uint32_t TaskCount = 1>
-    double run() 
-    {
-        std::array<double, TaskCount> executionTimes;
-        for (uint32_t i = TaskCount; i > 0; --i)
-        {
-            try 
-            {
-                this->setUp();
-                const auto start{std::chrono::high_resolution_clock::now()};
-                this->compute();
-                const auto finish{std::chrono::high_resolution_clock::now()};
-                executionTimes[TaskCount - i] = std::chrono::duration<double>{finish - start}.count();
-            } catch (const std::runtime_error &e) 
-            {
-                std::cerr << e.what() << '\n';
-            }
-        }
-        m_averageExecutionTime = std::accumulate(executionTimes.begin(), executionTimes.end(), 0.0) / static_cast<double>(TaskCount);
-        return m_averageExecutionTime;
-    }
-protected:
-    virtual void setUp() { return; }
-
-    virtual void compute() { return; };
-
-    const double &getAvgExecutionTime() { return m_averageExecutionTime; }
-
-    double m_averageExecutionTime = 0;
-};
-
-template<typename Derived>
-class Benchmark : protected Runner 
-{
-public: 
-    static inline constexpr const uint32_t DEFAULT_TASK_COUNT = 10;
-
-    Benchmark(std::string name) : m_name(name) {}    
-
-    void measure() 
-    {
-        run<Derived::taskCount>();
-        util::prettyPrint(std::cout, getOutput());
-    };
-private:
-    boost::json::object getOutput() const 
-    {
-        boost::json::object output;
-        output["name"] = m_name;
-        output["times_executed"] = Derived::taskCount;
-        output["avg_execution_time_seconds"] = m_averageExecutionTime;
-        injectOutputParams(output);
-
-        return output;
-    }
-protected: 
-    virtual void injectOutputParams(boost::json::object &) const { return; }
-
-    std::string m_name;
-};
 
 template<typename DataType, 
     uint32_t Rows = constants::DEFAULT_MATRIX_ORDER, 
@@ -96,7 +15,7 @@ class MatMultBench : public Benchmark<MatMultBench<DataType, Rows, Columns, Mult
 public:
     static constexpr uint32_t taskCount = TaskCount;
 
-    MatMultBench() : Benchmark<MatMultBench>("Matrix mult " + util::to_string(MultType)) {}  
+    MatMultBench() : Benchmark<MatMultBench>("MatMult_" + util::toString(MultType)) {}  
 protected:
     void setUp() override 
     {
@@ -112,7 +31,7 @@ protected:
     virtual void injectOutputParams(boost::json::object &obj) const 
     {
         obj["data_type"] = typeid(DataType).name();
-        obj["matrix_dims"] = std::format("{}x{}}", Columns, Rows);
+        obj["matrix_dims"] = std::format("{}x{}", Columns, Rows);
     }
 
     Matrix<DataType, Rows, Columns> m_matA;
@@ -126,7 +45,7 @@ class MatMultBench<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount> : 
 public:
     static constexpr uint32_t taskCount = TaskCount;
 
-    MatMultBench() : Benchmark<MatMultBench>("MatMult_" + util::to_string(MatMultType::NaiveOcl)) {}  
+    MatMultBench() : Benchmark<MatMultBench>("MatMult_" + util::toString(MatMultType::NaiveOcl)) {}  
 protected:
     void setUp() override 
     {
@@ -178,8 +97,6 @@ protected:
     ThreadPool threadPool;
 };
 
-
-
 template <typename DataType, MatMultType... MultTypes>
 int runMatrixMultTypes()
 {
@@ -204,6 +121,37 @@ int runAllMatrixMultTypesWithDataTypes()
         //MatMultType::MultithreadSimd,
         MatMultType::NaiveOcl>()), ...);
     return 0;
+}
+
+template <typename DataType>
+int dispatchMultType(MatMultType mt) 
+{
+    if (MatMultType::Naive == mt)
+        return runMatrixMultTypes<DataType, MatMultType::Naive>();
+    if (MatMultType::Simd == mt)
+        return runMatrixMultTypes<DataType, MatMultType::Simd>();
+    if (MatMultType::MultithreadElement == mt)
+        return runMatrixMultTypes<DataType, MatMultType::MultithreadElement>();
+    if (MatMultType::MultithreadRow == mt)
+        return runMatrixMultTypes<DataType, MatMultType::MultithreadRow>();
+    if (MatMultType::MultithreadSimd == mt)
+        return runMatrixMultTypes<DataType, MatMultType::MultithreadSimd>();
+    if (MatMultType::NaiveOcl == mt)
+        return runMatrixMultTypes<DataType, MatMultType::NaiveOcl>();
+    throw std::runtime_error("Unknown mult type\n");
+}
+
+int dispatchMultDataType(MatMultType mt, MatMultDataType dt) 
+{
+    if (MatMultDataType::Int32 == dt)
+        return dispatchMultType<int32_t>(mt);
+    if (MatMultDataType::Uint32 == dt)
+        return dispatchMultType<uint32_t>(mt);
+    if (MatMultDataType::Float == dt)
+        return dispatchMultType<float>(mt);
+    if (MatMultDataType::Double == dt)
+        return dispatchMultType<double>(mt);
+    throw std::runtime_error("Unknown data type\n");
 }
 
 } // namespace Benchmarks

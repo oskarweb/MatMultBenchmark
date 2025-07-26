@@ -1,6 +1,5 @@
-#include "benchmarks.hpp"
+#include "matrix_benchmarks.hpp"
 #include "ocl_utils.hpp"
-#include "matrix.hpp"
 #include "utils.hpp"
 
 #include <boost/program_options.hpp>
@@ -57,7 +56,7 @@ int main(int argc, char *argv[])
 
     // std::cin.get();
 
-    Benchmarks::runAllMatrixMultTypesWithDataTypes<uint32_t>();
+    // Benchmarks::runAllMatrixMultTypesWithDataTypes<uint32_t>();
     // std::cout << "RES 1: " << '\n';
     // std::cout << Res4 << '\n';
     // std::cout << "RES 2: " << '\n';
@@ -65,21 +64,34 @@ int main(int argc, char *argv[])
 
     // assert(allEqual(Res1, Res2, Res3, Res4, Res5));
 
-    Matrix<uint32_t, 128, 128> mat1{};
-    mat1.randomFill();
-    Matrix<uint32_t, 128, 128> mat2{};
-    mat2.randomFill();
-    auto res1 = mat1.mult<MatMultType::Naive>(mat2);
-    // std::cout << "Res1: " << '\n' << res1;
-    auto res2 = mat1.mult<MatMultType::Simd>(mat2);
-    // std::cout << "\nRes2: " << '\n' << res2;
-    //auto res3 = mat1.mult<MatMultType::MultithreadElement>(mat2);
-    // std::cout << "\nRes3: " << '\n' << res3;
-    //auto res4 = mat1.mult<MatMultType::MultithreadRow>(mat2);
-    // std::cout << "\nRes4: " << '\n' << res4;
-    auto res5 = mat1.mult<MatMultType::MultithreadSimd>(mat2);
-    // std::cout << "\nRes5: " << '\n' << res5;
-    auto res6 = mat1.mult<MatMultType::NaiveOcl>(mat2);
+    std::vector<MatMultType> multTypesToDispatch = { MatMultType::Naive, MatMultType::NaiveOcl };
+    std::vector<MatMultDataType> dataTypesToDispatch = { MatMultDataType::Float, MatMultDataType::Double };
+
+    for (auto mt : multTypesToDispatch) 
+    {
+        for (auto dt : dataTypesToDispatch)
+        {
+            int res = 0;
+            Benchmarks::dispatchMultDataType(mt, dt);
+            if (res != 0) return res;
+        }
+    }
+
+    // Matrix<uint32_t, 128, 128> mat1{};
+    // mat1.randomFill();
+    // Matrix<uint32_t, 128, 128> mat2{};
+    // mat2.randomFill();
+    // auto res1 = mat1.mult<MatMultType::Naive>(mat2);
+    // // std::cout << "Res1: " << '\n' << res1;
+    // auto res2 = mat1.mult<MatMultType::Simd>(mat2);
+    // // std::cout << "\nRes2: " << '\n' << res2;
+    // //auto res3 = mat1.mult<MatMultType::MultithreadElement>(mat2);
+    // // std::cout << "\nRes3: " << '\n' << res3;
+    // //auto res4 = mat1.mult<MatMultType::MultithreadRow>(mat2);
+    // // std::cout << "\nRes4: " << '\n' << res4;
+    // auto res5 = mat1.mult<MatMultType::MultithreadSimd>(mat2);
+    // // std::cout << "\nRes5: " << '\n' << res5;
+    // auto res6 = mat1.mult<MatMultType::NaiveOcl>(mat2);
     // std::cout << "\nRes6: " << '\n' << res6;
     try {
         boost_po::options_description desc("Allowed options");
@@ -113,7 +125,7 @@ int main(int argc, char *argv[])
     }
 
 
-    assert(util::allEqual(res1, res2, res5, res6));
+    //assert(util::allEqual(res1, res2, res5, res6));
 
     // return result;
     return 0;

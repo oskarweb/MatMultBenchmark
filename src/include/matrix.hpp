@@ -31,7 +31,17 @@ enum class MatMultType
     MultithreadRow,
     MultithreadElement,
     MultithreadSimd,
-    NaiveOcl
+    NaiveOcl,
+    Unknown
+};
+
+enum class MatMultDataType 
+{ 
+    Int32 = 0,
+    Uint32,
+    Float,
+    Double,
+    Unknown 
 };
 
 template<typename T, size_t Size>
@@ -45,19 +55,20 @@ struct MatrixStorage {
     >;
 };
 
+template <MatMultType, typename MatrixA, typename MatrixB>
+struct MatrixMultImpl;
+
 template<typename DataType = int, 
     int _Rows = constants::DEFAULT_MATRIX_ORDER, 
     int _Cols = constants::DEFAULT_MATRIX_ORDER>
 class Matrix 
 { 
 public:
-    template <MatMultType, typename MatrixA, typename MatrixB>
-    struct MatrixMultImpl;
-    
     constexpr const static int Rows = _Rows;
     constexpr const static int Columns = _Cols;
     constexpr const static int Size = Rows * Columns;
-
+    
+    using DataT = typename DataType;
     using Storage = typename MatrixStorage<DataType, Size>::type;
 
     template<typename T = void>
@@ -161,14 +172,12 @@ private:
     Storage m_data;
 };
 
-
-template <typename DataType, int Rows, int Columns>
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::Naive, MatrixA, MatrixB> 
+struct MatrixMultImpl<MatMultType::Naive, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
-        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        using ResultMatrix = Matrix<MatrixA::DataT, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
 
         for (int i = 0; i < MatrixA::Rows; ++i) 
@@ -186,17 +195,17 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::Naive, Matri
     }
 };
 
-template <typename DataType, int Rows, int Columns>
+
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::Simd, MatrixA, MatrixB> 
+struct MatrixMultImpl<MatMultType::Simd, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
-        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        using ResultMatrix = Matrix<MatrixA::DataT, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
         constexpr int regsA = 3;
         constexpr int regsB = 4;
-        constexpr int blockCols = regsB * SimdTraits<DataType>::width;
+        constexpr int blockCols = regsB * SimdTraits<MatrixA::DataT>::width;
         constexpr int M = MatrixA::Rows;
         constexpr int N = MatrixB::Columns;
         constexpr int K = MatrixA::Columns;
@@ -208,7 +217,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::Simd, Matrix
         {
             for (int j = 0; j <= N - blockCols; j += blockCols) 
             {
-                Matrix<>::matmul_dot_inner<DataType, regsA, regsB>(
+                Matrix<>::matmul_dot_inner<MatrixA::DataT, regsA, regsB>(
                     K,
                     &a[i * lda], lda,
                     &b[j], ldb,
@@ -232,13 +241,13 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::Simd, Matrix
     }
 };
 
-template <typename DataType, int Rows, int Columns>
+
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadRow, MatrixA, MatrixB> 
+struct MatrixMultImpl<MatMultType::MultithreadRow, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
-        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        using ResultMatrix = Matrix<MatrixA::DataT, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
         constexpr int M = MatrixA::Rows;
         constexpr int N = MatrixB::Columns;
@@ -269,13 +278,13 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadR
     }
 };
 
-template <typename DataType, int Rows, int Columns>
+
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadElement, MatrixA, MatrixB> 
+struct MatrixMultImpl<MatMultType::MultithreadElement, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
-        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        using ResultMatrix = Matrix<MatrixA::DataT, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
         constexpr int M = MatrixA::Rows;
         constexpr int N = MatrixB::Columns;
@@ -306,17 +315,17 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadE
     }
 };
 
-template <typename DataType, int Rows, int Columns>
+
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadSimd, MatrixA, MatrixB> 
+struct MatrixMultImpl<MatMultType::MultithreadSimd, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
-        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        using ResultMatrix = Matrix<MatrixA::DataT, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
         constexpr int regsA = 3;
         constexpr int regsB = 4;
-        constexpr int blockCols = regsB * SimdTraits<DataType>::width;
+        constexpr int blockCols = regsB * SimdTraits<MatrixA::DataT>::width;
         constexpr int M = MatrixA::Rows;
         constexpr int N = MatrixB::Columns;
         constexpr int K = MatrixA::Columns;
@@ -351,7 +360,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadS
                     for (int blockCol = 0; blockCol < numColBlocks; ++blockCol) 
                     {
                         int j = blockCol * blockCols;
-                        Matrix<>::matmul_dot_inner<DataType, regsA, regsB>(
+                        Matrix<>::matmul_dot_inner<MatrixA::DataT, regsA, regsB>(
                             K,
                             &a[i * lda], lda,
                             &b[j], ldb,
@@ -386,13 +395,13 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadS
     }
 };
 
-template <typename DataType, int Rows, int Columns>
+
 template <typename MatrixA, typename MatrixB>
-struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::NaiveOcl, MatrixA, MatrixB> 
+struct MatrixMultImpl<MatMultType::NaiveOcl, MatrixA, MatrixB> 
 {
     static auto multiply(const MatrixA& a, const MatrixB& b) 
     {
-        using ResultMatrix = Matrix<DataType, MatrixA::Rows, MatrixB::Columns>;
+        using ResultMatrix = Matrix<MatrixA::DataT, MatrixA::Rows, MatrixB::Columns>;
         ResultMatrix result;
         cl_int err;
         
@@ -403,21 +412,21 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::NaiveOcl, Ma
 
         oclUtil::memWrapper bufA = clCreateBuffer(program.getContext(),
                                                   CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                                                  sizeof(DataType) * MatrixA::Size,
-                                                  const_cast<DataType*>(a.data().data()), 
+                                                  sizeof(MatrixA::DataT) * MatrixA::Size,
+                                                  const_cast<MatrixA::DataT*>(a.data().data()), 
                                                   &err);
         CHECK_CL_ERROR(err, "clCreateBuffer");
 
         oclUtil::memWrapper bufB = clCreateBuffer(program.getContext(), 
                                                   CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
-                                                  sizeof(DataType) * MatrixB::Size, 
-                                                  const_cast<DataType*>(b.data().data()), 
+                                                  sizeof(MatrixA::DataT) * MatrixB::Size, 
+                                                  const_cast<MatrixA::DataT*>(b.data().data()), 
                                                   &err);
         CHECK_CL_ERROR(err, "clCreateBuffer");
 
         oclUtil::memWrapper bufC = clCreateBuffer(program.getContext(), 
                                                   CL_MEM_WRITE_ONLY, 
-                                                  sizeof(DataType) * ResultMatrix::Size, 
+                                                  sizeof(MatrixA::DataT) * ResultMatrix::Size, 
                                                   nullptr, 
                                                   &err);
         CHECK_CL_ERROR(err, "clCreateBuffer");
@@ -445,7 +454,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::NaiveOcl, Ma
                             bufC, 
                             CL_TRUE, 
                             0, 
-                            sizeof(DataType) * ResultMatrix::Size, 
+                            sizeof(MatrixA::DataT) * ResultMatrix::Size, 
                             result.data().data(), 
                             0, 
                             nullptr,
