@@ -244,7 +244,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadR
         constexpr int N = MatrixB::Columns;
         constexpr int K = MatrixA::Columns;
 
-        std::array<std::thread, M> threads;
+        std::vector<std::thread> threads(M);
 
         for(int i = 0; i < M; ++i) 
         {
@@ -281,7 +281,7 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::MultithreadE
         constexpr int N = MatrixB::Columns;
         constexpr int K = MatrixA::Columns;
 
-        std::array<std::thread, M * N> threads;
+        std::vector<std::thread> threads(M*N);
 
         for(int i = 0; i < M; ++i) 
         {
@@ -422,13 +422,6 @@ struct Matrix<DataType, Rows, Columns>::MatrixMultImpl<MatMultType::NaiveOcl, Ma
                                                   &err);
         CHECK_CL_ERROR(err, "clCreateBuffer");
     
-
-        // program.setKernelArg(bufA);
-        // program.setKernelArg(bufB);
-        // program.setKernelArg(bufC);
-        // program.setKernelArg(MatrixA::Rows);
-        // program.setKernelArg(MatrixA::Columns);
-        // program.setKernelArg(ResultMatrix::Columns);
         clSetKernelArg(program.getKernel(), 0, sizeof(cl_mem), &bufA);
         clSetKernelArg(program.getKernel(), 1, sizeof(cl_mem), &bufB);
         clSetKernelArg(program.getKernel(), 2, sizeof(cl_mem), &bufC);

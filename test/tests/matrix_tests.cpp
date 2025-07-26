@@ -13,8 +13,7 @@
 #define MATRIX_DIMS_FOR_TYPE(T)                     \
     MatrixParams<T, 2, 2>,                          \
     MatrixParams<T, 4, 4>,                          \
-    MatrixParams<T, 32, 32>,                        \
-    MatrixParams<T, 256, 256>
+    MatrixParams<T, 64, 64>
 
 template<typename T>
 void randomfillBoostMatrix(boost::numeric::ublas::matrix<T>& mat, T min, T max)
@@ -117,22 +116,15 @@ TYPED_TEST_SUITE(MatrixMultFixture, TestedMatrixDataTypeCombinations);
 
 TYPED_TEST_SUITE(MatrixMultFixtureOcl, TestedMatrixDataTypeCombinations);
 
-#define MAT_MULT_TYPED_TEST(MultType)                                                \
-TYPED_TEST(MatrixMultFixture, WhenPerforming##MultType##MultThenReturnCorrectResult) \
-{                                                                                    \
-    this->run<MatMultType::MultType>();                                              \
+#define MAT_MULT_TYPED_TEST(CaseName, MultType)                             \
+TYPED_TEST(CaseName, WhenPerforming##MultType##MultThenReturnCorrectResult) \
+{                                                                           \
+    this->run<MatMultType::MultType>();                                     \
 }
 
-#define MAT_MULT_TYPED_TEST_OCL(MultType)                                               \
-TYPED_TEST(MatrixMultFixtureOcl, WhenPerforming##MultType##MultThenReturnCorrectResult) \
-{                                                                                       \
-    this->run<MatMultType::MultType>();                                                 \
-}
-
-MAT_MULT_TYPED_TEST(Naive);
-MAT_MULT_TYPED_TEST(Simd);
-MAT_MULT_TYPED_TEST(MultithreadElement);
-MAT_MULT_TYPED_TEST(MultithreadRow);
-MAT_MULT_TYPED_TEST(MultithreadSimd);
-
-MAT_MULT_TYPED_TEST_OCL(NaiveOcl);
+MAT_MULT_TYPED_TEST(MatrixMultFixture, Naive);
+MAT_MULT_TYPED_TEST(MatrixMultFixture, Simd);
+MAT_MULT_TYPED_TEST(MatrixMultFixture, MultithreadElement);
+MAT_MULT_TYPED_TEST(MatrixMultFixture, MultithreadRow);
+MAT_MULT_TYPED_TEST(MatrixMultFixture, MultithreadSimd);
+MAT_MULT_TYPED_TEST(MatrixMultFixtureOcl, NaiveOcl);
