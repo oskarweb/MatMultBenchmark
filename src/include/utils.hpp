@@ -1,5 +1,7 @@
 #pragma once
 
+#include <boost/json.hpp>
+
 #include <algorithm>
 #include <filesystem>
 #include <format>
@@ -67,11 +69,11 @@ inline void appendLabelValue(std::string &str, const labelType &label, const val
 }
 
 inline std::unique_ptr<char[]> loadDataFromFile(std::filesystem::path filename, size_t *dataSize = nullptr) {
-    if (!std::filesystem::exists(filename)) {
+    if (not std::filesystem::exists(filename)) {
         std::cerr << "File does not exist: " << filename << std::endl;
     }
     std::ifstream file(filename, std::ios::binary);
-    if (!file) throw std::runtime_error("Failed to open file");
+    if (not file) throw std::runtime_error("Failed to open file");
 
     std::stringstream ss;
     ss << file.rdbuf();
@@ -86,17 +88,17 @@ inline std::unique_ptr<char[]> loadDataFromFile(std::filesystem::path filename, 
     std::memcpy(buffer.get(), str.c_str(), size);
 
     file.close();
-    if (!file) throw std::runtime_error("Failed to close file");
+    if (not file) throw std::runtime_error("Failed to close file");
 
     return buffer;
 }
 
 inline std::unique_ptr<unsigned char[]> loadDataFromBinaryFile(std::filesystem::path filename, size_t *dataSize = nullptr) {
     std::ifstream file(filename, std::ios::binary);
-    if (!std::filesystem::exists(filename)) {
+    if (not std::filesystem::exists(filename)) {
         std::cerr << "File does not exist: " << filename << std::endl;
     }
-    if (!file) throw std::runtime_error("Failed to open file");
+    if (not file) throw std::runtime_error("Failed to open file");
 
     std::stringstream ss;
     ss << file.rdbuf();
@@ -111,7 +113,7 @@ inline std::unique_ptr<unsigned char[]> loadDataFromBinaryFile(std::filesystem::
     std::memcpy(buffer.get(), str.c_str(), size);
 
     file.close();
-    if (!file) throw std::runtime_error("Failed to close file");
+    if (not file) throw std::runtime_error("Failed to close file");
 
     return buffer;
 }
@@ -120,16 +122,102 @@ inline void writeDataToFile(std::filesystem::path filename, const unsigned char 
 {
     std::ofstream file(filename, std::ios::binary);
     // std::cerr << "Current working directory: " << std::filesystem::current_path() << std::endl;
-    if (!std::filesystem::exists(filename)) {
+    if (not std::filesystem::exists(filename)) {
         std::cerr << "File does not exist: " << filename << std::endl;
     }
-    if (!file) throw std::runtime_error("Failed to open file");
+    if (not file) throw std::runtime_error("Failed to open file");
     
     file.write(reinterpret_cast<const char*>(data), dataSize);
-    if (!file) throw std::runtime_error("Failed to write data to file");
+    if (not file) throw std::runtime_error("Failed to write data to file");
 
     file.close();
-    if (!file) throw std::runtime_error("Failed to close file");
+    if (not file) throw std::runtime_error("Failed to close file");
+}
+
+inline void prettyPrint(std::ostream &os, boost::json::value const &jv, std::string *indent = nullptr)
+{
+    std::string indent_;
+    if(not indent)
+        indent = &indent_;
+    switch(jv.kind())
+    {
+    case boost::json::kind::object:
+    {
+        os << "{\n";
+        indent->append(4, ' ');
+        auto const& obj = jv.get_object();
+        if(not obj.empty())
+        {
+            auto it = obj.begin();
+            for(;;)
+            {
+                os << *indent << boost::json::serialize(it->key()) << " : ";
+                prettyPrint(os, it->value(), indent);
+                if(++it == obj.end())
+                    break;
+                os << ",\n";
+            }
+        }
+        os << "\n";
+        indent->resize(indent->size() - 4);
+        os << *indent << "}";
+        break;
+    }
+    case boost::json::kind::array:
+    {
+        os << "[\n";
+        indent->append(4, ' ');
+        auto const& arr = jv.get_array();
+        if(not arr.empty())
+        {
+            auto it = arr.begin();
+            for(;;)
+            {
+                os << *indent;
+                prettyPrint( os, *it, indent);
+                if(++it == arr.end())
+                    break;
+                os << ",\n";
+            }
+        }
+        os << "\n";
+        indent->resize(indent->size() - 4);
+        os << *indent << "]";
+        break;
+    }
+    case boost::json::kind::string:
+    {
+        os << boost::json::serialize(jv.get_string());
+        break;
+    }
+    case boost::json::kind::uint64:
+    case boost::json::kind::int64:
+    case boost::json::kind::double_:
+    {
+        os << jv;
+        break;
+    }
+    case boost::json::kind::bool_:
+    {
+        if(jv.get_bool())
+            os << "true";
+        else
+            os << "false";
+        break;
+    }
+    case boost::json::kind::null:
+    {    os << "null";
+        break;
+    }
+    }
+
+    if(indent->empty())
+        os << "\n";
+}
+
+inline void mergeJsonObjects(boost::json::object& dst, const boost::json::object& src)
+{
+    for (const auto& [key, value] : src) { dst.insert_or_assign(key, value); }
 }
 
 std::string to_string(MatMultType type);

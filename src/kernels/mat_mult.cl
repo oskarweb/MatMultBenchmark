@@ -2,6 +2,8 @@
 #define T float
 #endif
 
+#pragma OPENCL EXTENSION cl_khr_fp64 : enable
+
 __kernel void naive_mat_mult(
     __global T *A,
     __global T *B,

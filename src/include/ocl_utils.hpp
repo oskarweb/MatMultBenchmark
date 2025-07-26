@@ -121,7 +121,7 @@ private:
 
     void release()
     {
-        if (!object) return;
+        if (not object) return;
 
         auto err = Release(object);
         CHECK_CL_ERROR(err, "clRelease*()");

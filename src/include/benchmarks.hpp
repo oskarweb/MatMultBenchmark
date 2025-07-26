@@ -67,22 +67,21 @@ public:
     void measure() 
     {
         run<Derived::taskCount>();
-        std::cout << describe();
+        util::prettyPrint(std::cout, getOutput());
     };
 private:
-    std::string describe() const 
+    boost::json::object getOutput() const 
     {
-        std::string result;
+        boost::json::object output;
+        output["name"] = m_name;
+        output["times_executed"] = Derived::taskCount;
+        output["avg_execution_time_seconds"] = m_averageExecutionTime;
+        injectOutputParams(output);
 
-        result += "Ran: " + m_name + "\n{\n";
-        util::appendLabelValue(result, "Time(s) executed:", Derived::taskCount);
-        util::appendLabelValue(result, "Avg. execution time:", std::format("{} s", m_averageExecutionTime));
-        result += getExtraInfo() + "}\n";
-
-        return result;
+        return output;
     }
 protected: 
-    virtual std::string getExtraInfo() const { return ""; }
+    virtual void injectOutputParams(boost::json::object &) const { return; }
 
     std::string m_name;
 };
@@ -110,15 +109,10 @@ protected:
         m_matC = m_matA.mult<MultType>(m_matB);
     }
 
-    std::string getExtraInfo() const override 
+    virtual void injectOutputParams(boost::json::object &obj) const 
     {
-        std::string result;
-        std::string dims = std::format("{} x {}", Columns, Rows);
-
-        util::appendLabelValue(result, "Data type:", typeid(DataType).name());
-        util::appendLabelValue(result, "Result dims:", dims);
-
-        return result;
+        obj["data_type"] = typeid(DataType).name();
+        obj["matrix_dims"] = std::format("{}x{}}", Columns, Rows);
     }
 
     Matrix<DataType, Rows, Columns> m_matA;
@@ -132,7 +126,7 @@ class MatMultBench<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount> : 
 public:
     static constexpr uint32_t taskCount = TaskCount;
 
-    MatMultBench() : Benchmark<MatMultBench>("Matrix mult " + util::to_string(MatMultType::NaiveOcl)) {}  
+    MatMultBench() : Benchmark<MatMultBench>("MatMult_" + util::to_string(MatMultType::NaiveOcl)) {}  
 protected:
     void setUp() override 
     {
@@ -150,15 +144,10 @@ protected:
         m_matC = m_matA.mult<MatMultType::NaiveOcl>(m_matB);
     }
 
-    std::string getExtraInfo() const override 
+    virtual void injectOutputParams(boost::json::object &obj) const 
     {
-        std::string result;
-        std::string dims = std::format("{} x {}", Columns, Rows);
-
-        util::appendLabelValue(result, "Data type:", typeid(DataType).name());
-        util::appendLabelValue(result, "Result dims:", dims);
-
-        return result;
+        obj["data_type"] = typeid(DataType).name();
+        obj["matrix_dims"] = std::format("{}x{}", Columns, Rows);
     }
 
     Matrix<DataType, Rows, Columns> m_matA;
