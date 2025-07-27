@@ -64,19 +64,6 @@ int main(int argc, char *argv[])
 
     // assert(allEqual(Res1, Res2, Res3, Res4, Res5));
 
-    std::vector<MatMultType> multTypesToDispatch = { MatMultType::Naive, MatMultType::NaiveOcl };
-    std::vector<MatMultDataType> dataTypesToDispatch = { MatMultDataType::Float, MatMultDataType::Double };
-
-    for (auto mt : multTypesToDispatch) 
-    {
-        for (auto dt : dataTypesToDispatch)
-        {
-            int res = 0;
-            Benchmarks::dispatchMultDataType(mt, dt);
-            if (res != 0) return res;
-        }
-    }
-
     // Matrix<uint32_t, 128, 128> mat1{};
     // mat1.randomFill();
     // Matrix<uint32_t, 128, 128> mat2{};
@@ -124,9 +111,18 @@ int main(int argc, char *argv[])
         std::cerr << "Exception of unknown type!\n";
     }
 
+    std::vector<MatMultType> multTypesToDispatch = { MatMultType::Naive, MatMultType::NaiveOcl };
+    std::vector<MatMultDataType> dataTypesToDispatch = { MatMultDataType::Float, MatMultDataType::Double };
 
-    //assert(util::allEqual(res1, res2, res5, res6));
+    int result = -1;
+    std::cout << "Running benchmarks" << '\n';
+    result = Benchmarks::dispatchMatMultBenchmarks(multTypesToDispatch, dataTypesToDispatch);
+    std::cout << "STATUS: ";
+    return result;
 
-    // return result;
-    return 0;
+
+    // //assert(util::allEqual(res1, res2, res5, res6));
+
+    // // return result;
+    // return 0;
 }

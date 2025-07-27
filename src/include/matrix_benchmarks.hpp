@@ -154,4 +154,24 @@ int dispatchMultDataType(MatMultType mt, MatMultDataType dt)
     throw std::runtime_error("Unknown data type\n");
 }
 
+int dispatchMatMultBenchmarks(const std::vector<MatMultType> &mtV, const std::vector<MatMultDataType> &dtV) 
+{
+    std::cout << "[\n";
+    for (size_t i = 0; i < mtV.size(); ++i) 
+    {
+        for (size_t j = 0; j < dtV.size(); ++j)
+        {
+            int res = 0;
+            Benchmarks::dispatchMultDataType(mtV[i], dtV[j]);
+            if (res != 0) return res;
+            if (i == mtV.size() - 1 && j == dtV.size() - 1) 
+                continue;
+            std::cout << ',';
+        }
+    }
+    std::cout << "]\n";
+
+    return 0;
+}
+
 } // namespace Benchmarks
