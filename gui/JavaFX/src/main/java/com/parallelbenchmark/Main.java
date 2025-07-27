@@ -1,4 +1,4 @@
-package com.matmultbench;
+package com.parallelbenchmark;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -9,7 +9,7 @@ import javafx.stage.Stage;
 public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/com/matmultbench/main.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/com/parallelbenchmark/main.fxml"));
         primaryStage.setTitle("JavaFX Process Launcher");
         primaryStage.setScene(new Scene(root, 1000, 800));
         primaryStage.show();

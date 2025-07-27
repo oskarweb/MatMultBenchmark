@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 
 <AnchorPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.matmultbench.Controller"
+            fx:controller="com.parallelbenchmark.Controller"
             prefWidth="1000" prefHeight="800">
 
     <Button fx:id="runBenchmarkButton"

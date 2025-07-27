@@ -1,4 +1,4 @@
-package com.matmultbench;
+package com.parallelbenchmark;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -19,7 +19,7 @@ public class Controller {
 
     private void runBenchmark() {
         try {
-            File exe = new File("build/benchmarks/bin/OclDemo.exe");
+            File exe = new File("build/benchmarks/bin/parallel_benchmark.exe");
             File workingDir = new File("build/benchmarks/bin");
 
             ProcessBuilder builder = new ProcessBuilder(exe.getAbsolutePath());

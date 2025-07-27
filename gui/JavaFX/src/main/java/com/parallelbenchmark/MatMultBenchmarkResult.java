@@ -1,4 +1,4 @@
-package com.matmultbench;
+package com.parallelbenchmark;
 
 public class MatMultBenchmarkResult extends BenchmarkResult 
 {

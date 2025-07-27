@@ -12,7 +12,7 @@ endif()
 
 FetchContent_MakeAvailable(googletest)
 
-set(TESTS_TARGET_NAME ocldemolib_tests)
+set(TESTS_TARGET_NAME parallel_benchmark_tests)
 
 set(BOOST_COMPONENTS program_options)
 
@@ -21,14 +21,14 @@ add_executable(${TESTS_TARGET_NAME})
 add_subdirectory(fixtures)
 add_subdirectory(tests)
 
-target_sources(ocldemolib_tests
+target_sources(${TESTS_TARGET_NAME}
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests_main.cpp
 )
 
 link_boost(${TESTS_TARGET_NAME} ${BOOST_COMPONENTS})
 
 target_link_libraries(${TESTS_TARGET_NAME}
-    PRIVATE OclDemoLib
+    PRIVATE ParallelBenchmark::Lib
     PRIVATE gtest
     PRIVATE OpenCL::OpenCL
 )

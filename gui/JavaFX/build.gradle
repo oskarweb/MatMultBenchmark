@@ -18,21 +18,21 @@ javafx {
 }
 
 application {
-    mainClass = 'com.matmultbench.Main'
-    mainModule = 'matmultbench'
+    mainClass = 'com.parallelbenchmark.Main'
+    mainModule = 'parallelbenchmark'
 }
 
 jlink {
     options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
     launcher {
-        name = 'matmultbench'
+        name = 'parallelbenchmark'
     }
 }
 
 task copyBenchmarks(type: Copy) {
     into "$buildDir"
 
-    from('../../build/debug/OclDemo.exe') {
+    from('../../build/debug/parallel_benchmark.exe') {
         into 'benchmarks/bin'
     }
 

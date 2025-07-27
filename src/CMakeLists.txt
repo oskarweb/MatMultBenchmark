@@ -3,10 +3,10 @@ include(${CMAKE_SOURCE_DIR}/cmake/utils.cmake)
 file(GLOB HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp")
 file(GLOB SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-set(LIB_NAME "OclDemoLib")
+set(LIB_NAME "parallel_benchmark_lib")
 
 add_library(${LIB_NAME} ${HEADERS} ${SOURCES})
-add_library(OclDemo::Lib ALIAS ${LIB_NAME})
+add_library(ParallelBenchmark::Lib ALIAS ${LIB_NAME})
 
 set(BOOST_COMPONENTS json)
 

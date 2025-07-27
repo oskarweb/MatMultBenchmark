@@ -10,12 +10,12 @@ template<typename DataType,
     uint32_t Columns = constants::DEFAULT_MATRIX_ORDER,
     MatMultType MultType = MatMultType::Naive, 
     uint32_t TaskCount = DEFAULT_TASK_COUNT>
-class MatMultBench : public Benchmark<MatMultBench<DataType, Rows, Columns, MultType, TaskCount>>  
+class MatMultBenchmark : public Benchmark<MatMultBenchmark<DataType, Rows, Columns, MultType, TaskCount>>  
 {
 public:
     static constexpr uint32_t taskCount = TaskCount;
 
-    MatMultBench() : Benchmark<MatMultBench>("MatMult_" + util::toString(MultType)) {}  
+    MatMultBenchmark() : Benchmark<MatMultBenchmark>("MatMult_" + util::toString(MultType)) {}  
 protected:
     void setUp() override 
     {
@@ -40,12 +40,13 @@ protected:
 };
 
 template<typename DataType, uint32_t Rows, uint32_t Columns, uint32_t TaskCount>
-class MatMultBench<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount> : public Benchmark<MatMultBench<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount>>  
+class MatMultBenchmark<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount> 
+    : public Benchmark<MatMultBenchmark<DataType, Rows, Columns, MatMultType::NaiveOcl, TaskCount>>  
 {
 public:
     static constexpr uint32_t taskCount = TaskCount;
 
-    MatMultBench() : Benchmark<MatMultBench>("MatMult_" + util::toString(MatMultType::NaiveOcl)) {}  
+    MatMultBenchmark() : Benchmark<MatMultBenchmark>("MatMult_" + util::toString(MatMultType::NaiveOcl)) {}  
 protected:
     void setUp() override 
     {
@@ -79,11 +80,11 @@ template<typename T,
     uint32_t Columns = constants::DEFAULT_MATRIX_ORDER,
     MatMultType MultType = MatMultType::Naive, 
     uint32_t TaskCount = DEFAULT_TASK_COUNT>
-class ParCpuMatMultBench : public MatMultBench<T, Rows, Columns, MultType, TaskCount>
+class ParCpuMatMultBenchmark : public MatMultBenchmark<T, Rows, Columns, MultType, TaskCount>
 {
 public: 
-    ParCpuMatMultBench(std::string name) : 
-        MatMultBench<T, Rows, Columns, MultType, TaskCount>(name),
+    ParCpuMatMultBenchmark(std::string name) : 
+        MatMultBenchmark<T, Rows, Columns, MultType, TaskCount>(name),
         threadPool(std::max(std::thread::hardware_concurrency(), 4u)) {}  
 protected:
     void compute() override 
@@ -100,7 +101,7 @@ protected:
 template <typename DataType, MatMultType... MultTypes>
 int runMatrixMultTypes()
 {
-    ((MatMultBench<
+    ((MatMultBenchmark<
         DataType,
         constants::DEFAULT_MATRIX_ORDER,
         constants::DEFAULT_MATRIX_ORDER,
@@ -156,14 +157,14 @@ int dispatchMultDataType(MatMultType mt, MatMultDataType dt)
 
 int dispatchMatMultBenchmarks(const std::vector<MatMultType> &mtV, const std::vector<MatMultDataType> &dtV) 
 {
+    int result{-1};
     std::cout << "[\n";
     for (size_t i = 0; i < mtV.size(); ++i) 
     {
         for (size_t j = 0; j < dtV.size(); ++j)
         {
-            int res = 0;
-            Benchmarks::dispatchMultDataType(mtV[i], dtV[j]);
-            if (res != 0) return res;
+            result = Benchmarks::dispatchMultDataType(mtV[i], dtV[j]);
+            if (result != 0) return result;
             if (i == mtV.size() - 1 && j == dtV.size() - 1) 
                 continue;
             std::cout << ',';
@@ -171,7 +172,7 @@ int dispatchMatMultBenchmarks(const std::vector<MatMultType> &mtV, const std::ve
     }
     std::cout << "]\n";
 
-    return 0;
+    return result;
 }
 
 } // namespace Benchmarks

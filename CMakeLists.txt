@@ -2,7 +2,7 @@ include(${CMAKE_SOURCE_DIR}/cmake/utils.cmake)
 
 cmake_minimum_required(VERSION 3.14)
 
-set(PROJECT_NAME "OclDemo")
+set(PROJECT_NAME "parallel_benchmark")
 
 set(ALL_TARGETS ${PROJECT_NAME} CACHE INTERNAL "All targets")
 
@@ -59,7 +59,7 @@ link_boost(${PROJECT_NAME} ${BOOST_COMPONENTS})
 
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE OpenCL::OpenCL
-    PRIVATE OclDemo::Lib
+    PRIVATE ParallelBenchmark::Lib
 )
 
 foreach(TARGET IN LISTS ALL_TARGETS)

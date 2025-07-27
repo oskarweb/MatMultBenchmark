@@ -1,9 +1,9 @@
-module matmultbench {
+module parallelbenchmark {
     requires javafx.controls;
     requires javafx.fxml;
     requires com.google.gson;
 
-    opens com.matmultbench to javafx.fxml;
+    opens com.parallelbenchmark to javafx.fxml;
 
-    exports com.matmultbench;
+    exports com.parallelbenchmark;
 }
