@@ -29,6 +29,10 @@ jlink {
     }
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs << "-Xlint:unchecked"
+}
+
 task copyBenchmarks(type: Copy) {
     into "$buildDir"
 

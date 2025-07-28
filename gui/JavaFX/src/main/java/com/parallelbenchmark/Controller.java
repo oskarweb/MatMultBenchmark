@@ -1,7 +1,13 @@
 package com.parallelbenchmark;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.cell.PropertyValueFactory;
+
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
@@ -12,8 +18,26 @@ public class Controller {
     @FXML
     private Button runBenchmarkButton;
 
+    @FXML 
+    private TableView<MatMultBenchmarkResult> table;
+
     @FXML
     public void initialize() {
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        TableColumn<MatMultBenchmarkResult, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<MatMultBenchmarkResult, Integer> timesCol = new TableColumn<>("Times Executed");
+        timesCol.setCellValueFactory(new PropertyValueFactory<>("timesExecuted"));
+        TableColumn<MatMultBenchmarkResult, Double> avgTimeCol = new TableColumn<>("Avg Time (s)");
+        avgTimeCol.setCellValueFactory(new PropertyValueFactory<>("avgExecutionTimeSeconds"));
+        TableColumn<MatMultBenchmarkResult, String> dataTypesCol = new TableColumn<>("Data Type");
+        dataTypesCol.setCellValueFactory(new PropertyValueFactory<>("dataType"));
+        TableColumn<MatMultBenchmarkResult, String> matrixDimsCol = new TableColumn<>("Matrix Dims");
+        matrixDimsCol.setCellValueFactory(new PropertyValueFactory<>("matrixDims"));
+        
+        List<TableColumn<MatMultBenchmarkResult, ?>> columns = Arrays.asList(nameCol, timesCol, avgTimeCol, dataTypesCol, matrixDimsCol);
+        table.getColumns().setAll(columns);
+
         runBenchmarkButton.setOnAction(event -> runBenchmark());
     }
 
@@ -58,8 +82,8 @@ public class Controller {
 
             Gson gson = new Gson();
             MatMultBenchmarkResult[] resultArray = gson.fromJson(jsonBlock.toString(), MatMultBenchmarkResult[].class);
-            List<MatMultBenchmarkResult> results = Arrays.asList(resultArray);
-            results.forEach(System.out::println);
+            ObservableList<MatMultBenchmarkResult> benchmarkResults = FXCollections.observableArrayList(resultArray);
+            table.setItems(benchmarkResults);
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         } catch (RuntimeException e) {

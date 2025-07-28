@@ -69,10 +69,8 @@ inline void appendLabelValue(std::string &str, const labelType &label, const val
 }
 
 inline std::unique_ptr<char[]> loadDataFromFile(std::filesystem::path filename, size_t *dataSize = nullptr) {
-    if (not std::filesystem::exists(filename)) {
-        std::cerr << "File does not exist: " << filename << std::endl;
-    }
     std::ifstream file(filename, std::ios::binary);
+
     if (not file) throw std::runtime_error("Failed to open file");
 
     std::stringstream ss;
@@ -95,9 +93,7 @@ inline std::unique_ptr<char[]> loadDataFromFile(std::filesystem::path filename, 
 
 inline std::unique_ptr<unsigned char[]> loadDataFromBinaryFile(std::filesystem::path filename, size_t *dataSize = nullptr) {
     std::ifstream file(filename, std::ios::binary);
-    if (not std::filesystem::exists(filename)) {
-        std::cerr << "File does not exist: " << filename << std::endl;
-    }
+
     if (not file) throw std::runtime_error("Failed to open file");
 
     std::stringstream ss;
@@ -121,10 +117,7 @@ inline std::unique_ptr<unsigned char[]> loadDataFromBinaryFile(std::filesystem::
 inline void writeDataToFile(std::filesystem::path filename, const unsigned char *data, size_t dataSize)
 {
     std::ofstream file(filename, std::ios::binary);
-    // std::cerr << "Current working directory: " << std::filesystem::current_path() << std::endl;
-    if (not std::filesystem::exists(filename)) {
-        std::cerr << "File does not exist: " << filename << std::endl;
-    }
+    
     if (not file) throw std::runtime_error("Failed to open file");
     
     file.write(reinterpret_cast<const char*>(data), dataSize);

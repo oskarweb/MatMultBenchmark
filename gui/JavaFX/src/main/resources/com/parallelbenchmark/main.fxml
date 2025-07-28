@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.AnchorPane?>
 
 <AnchorPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.parallelbenchmark.Controller"
             prefWidth="1000" prefHeight="800">
-
     <Button fx:id="runBenchmarkButton"
             layoutX="80"
             layoutY="80"
             text="Run Process" />
+    <TableView fx:id="table"
+               layoutX="80"
+               layoutY="150"
+               prefWidth="840"
+               prefHeight="600"/>
 </AnchorPane>
