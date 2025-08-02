@@ -199,7 +199,8 @@ inline void prettyPrint(std::ostream &os, boost::json::value const &jv, std::str
             break;
         }
         case boost::json::kind::null:
-        {    os << "null";
+        {   
+            os << "null";
             break;
         }
     }

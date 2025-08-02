@@ -66,6 +66,7 @@ public:
     {
         run<Derived::taskCount>();
         util::prettyPrint(std::cout, getOutput());
+        std::cout.flush();
     };
 private:
     boost::json::object getOutput() const 

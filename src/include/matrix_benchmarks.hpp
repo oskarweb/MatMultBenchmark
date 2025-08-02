@@ -158,19 +158,15 @@ int dispatchMultDataType(MatMultType mt, MatMultDataType dt)
 int dispatchMatMultBenchmarks(const std::vector<MatMultType> &mtV, const std::vector<MatMultDataType> &dtV) 
 {
     int result{-1};
-    std::cout << "[\n";
-    for (size_t i = 0; i < mtV.size(); ++i) 
+    
+    for (auto &mt : mtV) 
     {
-        for (size_t j = 0; j < dtV.size(); ++j)
+        for (auto &dt : dtV) 
         {
-            result = Benchmarks::dispatchMultDataType(mtV[i], dtV[j]);
+            result = Benchmarks::dispatchMultDataType(mt, dt);
             if (result != 0) return result;
-            if (i == mtV.size() - 1 && j == dtV.size() - 1) 
-                continue;
-            std::cout << ',';
         }
     }
-    std::cout << "]\n";
 
     return result;
 }

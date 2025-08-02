@@ -114,11 +114,7 @@ int main(int argc, char *argv[])
     std::vector<MatMultType> multTypesToDispatch = { MatMultType::Naive, MatMultType::NaiveOcl };
     std::vector<MatMultDataType> dataTypesToDispatch = { MatMultDataType::Float, MatMultDataType::Double };
 
-    int result = -1;
-    std::cout << "Running benchmarks" << '\n';
-    result = Benchmarks::dispatchMatMultBenchmarks(multTypesToDispatch, dataTypesToDispatch);
-    std::cout << "STATUS: ";
-    return result;
+    return Benchmarks::dispatchMatMultBenchmarks(multTypesToDispatch, dataTypesToDispatch);
 
 
     // //assert(util::allEqual(res1, res2, res5, res6));

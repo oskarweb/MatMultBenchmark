@@ -1,5 +1,6 @@
 package com.parallelbenchmark;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -7,8 +8,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.concurrent.Task;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import com.google.gson.Gson;
@@ -42,52 +45,78 @@ public class Controller {
     }
 
     private void runBenchmark() {
-        try {
-            File exe = new File("build/benchmarks/bin/parallel_benchmark.exe");
-            File workingDir = new File("build/benchmarks/bin");
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() {
+                try {
+                    File exe = new File("build/benchmarks/bin/parallel_benchmark.exe");
+                    File workingDir = new File("build/benchmarks/bin");
 
-            ProcessBuilder builder = new ProcessBuilder(exe.getAbsolutePath());
-            builder.directory(workingDir);
-            builder.redirectErrorStream(true);
+                    ProcessBuilder builder = new ProcessBuilder(exe.getAbsolutePath());
+                    builder.directory(workingDir);
+                    builder.redirectErrorStream(true);
 
-            Process process = builder.start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            StringBuilder jsonBlock = new StringBuilder();
+                    Process process = builder.start();
 
-            boolean inJson = false;
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-                if (line.equals("Running benchmarks")) {
-                    inJson = true;
-                    continue;
-                }
+                    ObservableList<MatMultBenchmarkResult> benchmarkResults = FXCollections.observableArrayList();
+                    table.setItems(benchmarkResults);
 
-                if (line.startsWith("STATUS:")) {
-                    int status = process.waitFor();
-                    if (status != 0) {
-                        throw new RuntimeException("Benchmark failed with STATUS: " + status);
+                    Gson gson = new Gson();
+                    String line;
+                    StringBuilder objectBuilder = new StringBuilder();
+                    int braceDepth = 0;
+                    boolean insideObject = false;
+
+                    while ((line = reader.readLine()) != null) {
+                        line = line.trim();
+                        if (line.isEmpty()) continue;
+                    
+                        for (char c : line.toCharArray()) {
+                            if (c == '{') {
+                                if (!insideObject) {
+                                    insideObject = true;
+                                }
+                                braceDepth++;
+                            } else if (c == '}') {
+                                braceDepth--;
+                            }
+                        }
+                    
+                        if (insideObject) {
+                            objectBuilder.append(line).append("\n");
+                        
+                            if (braceDepth == 0) {
+                                String jsonObject = objectBuilder.toString();
+                                objectBuilder.setLength(0);
+                                insideObject = false;
+                            
+                                try {
+                                    MatMultBenchmarkResult result = gson.fromJson(jsonObject, MatMultBenchmarkResult.class);
+                                    table.getItems().add(result);
+                                } catch (Exception e) {
+                                    System.err.println("Failed to parse JSON object:");
+                                    System.err.println(jsonObject);
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
                     }
-                    break;
+                
+                    int exitCode = process.waitFor();
+                    if (exitCode != 0) {
+                        throw new RuntimeException("Benchmark process exited with status " + exitCode);
+                    }
+                
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                } catch (RuntimeException e) {
+                    System.err.println("Error: " + e.getMessage());
                 }
-
-                if (inJson) {
-                    jsonBlock.append(line).append("\n");
-                }
+                return null;
             }
-
-            System.out.println("Raw JSON block:");
-            System.out.println(jsonBlock);
-
-            Gson gson = new Gson();
-            MatMultBenchmarkResult[] resultArray = gson.fromJson(jsonBlock.toString(), MatMultBenchmarkResult[].class);
-            ObservableList<MatMultBenchmarkResult> benchmarkResults = FXCollections.observableArrayList(resultArray);
-            table.setItems(benchmarkResults);
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        } catch (RuntimeException e) {
-            System.err.println("Error: " + e.getMessage());
-        }
+        };
+        new Thread(task).start();
     }
 }
