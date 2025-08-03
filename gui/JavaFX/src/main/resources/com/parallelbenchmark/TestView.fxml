@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+    fx:controller="com.parallelbenchmark.controllers.MatMultBenchmarkController"
+    prefWidth="1280" prefHeight="960">
+    <VBox spacing="10" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="10">
+        <HBox spacing="10">
+            <Label text="Matrix Size:"/>
+            <ComboBox fx:id="matrixSizeComboBox" prefWidth="150" promptText="Select dims"/>
+            <Button fx:id="runBenchmarkButton" text="Run Benchmark"/>
+        </HBox>
+
+        <TabPane fx:id="viewTabs">
+            <Tab text="Table View">
+                <TableView fx:id="resultTable" prefHeight="400" prefWidth="600"/>
+            </Tab>
+            <Tab text="Chart View">
+                <BarChart fx:id="barChart" title="Benchmark Chart" prefHeight="400" prefWidth="600">
+                    <xAxis>
+                        <CategoryAxis label="Benchmark Name"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="Avg Time (s)"/>
+                    </yAxis>
+                </BarChart>
+            </Tab>
+        </TabPane>
+    </VBox>
+</AnchorPane>

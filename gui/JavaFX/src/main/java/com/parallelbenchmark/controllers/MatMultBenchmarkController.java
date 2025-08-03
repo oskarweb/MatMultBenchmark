@@ -1,6 +1,8 @@
-package com.parallelbenchmark;
+package com.parallelbenchmark.controllers;
 
-import javafx.application.Platform;
+import com.parallelbenchmark.MatMultBenchmarkResult;
+import com.parallelbenchmark.utils.IOUtils;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -11,22 +13,19 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.concurrent.Task;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import com.google.gson.Gson;
 
-public class Controller {
-
+public class MatMultBenchmarkController {
     @FXML
     private Button runBenchmarkButton;
 
     @FXML 
-    private TableView<MatMultBenchmarkResult> table;
+    private TableView<MatMultBenchmarkResult> resultTable;
 
     @FXML
     public void initialize() {
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        resultTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         TableColumn<MatMultBenchmarkResult, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         TableColumn<MatMultBenchmarkResult, Integer> timesCol = new TableColumn<>("Times Executed");
@@ -39,12 +38,12 @@ public class Controller {
         matrixDimsCol.setCellValueFactory(new PropertyValueFactory<>("matrixDims"));
         
         List<TableColumn<MatMultBenchmarkResult, ?>> columns = Arrays.asList(nameCol, timesCol, avgTimeCol, dataTypesCol, matrixDimsCol);
-        table.getColumns().setAll(columns);
+        resultTable.getColumns().setAll(columns);
 
         runBenchmarkButton.setOnAction(event -> runBenchmark());
     }
 
-    private void runBenchmark() {
+    public void runBenchmark() {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() {
@@ -58,57 +57,15 @@ public class Controller {
 
                     Process process = builder.start();
 
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
                     ObservableList<MatMultBenchmarkResult> benchmarkResults = FXCollections.observableArrayList();
-                    table.setItems(benchmarkResults);
+                    resultTable.setItems(benchmarkResults);
 
-                    Gson gson = new Gson();
-                    String line;
-                    StringBuilder objectBuilder = new StringBuilder();
-                    int braceDepth = 0;
-                    boolean insideObject = false;
-
-                    while ((line = reader.readLine()) != null) {
-                        line = line.trim();
-                        if (line.isEmpty()) continue;
+                    IOUtils.writeJsonObjectsToList(process.getInputStream(), benchmarkResults, MatMultBenchmarkResult.class);
                     
-                        for (char c : line.toCharArray()) {
-                            if (c == '{') {
-                                if (!insideObject) {
-                                    insideObject = true;
-                                }
-                                braceDepth++;
-                            } else if (c == '}') {
-                                braceDepth--;
-                            }
-                        }
-                    
-                        if (insideObject) {
-                            objectBuilder.append(line).append("\n");
-                        
-                            if (braceDepth == 0) {
-                                String jsonObject = objectBuilder.toString();
-                                objectBuilder.setLength(0);
-                                insideObject = false;
-                            
-                                try {
-                                    MatMultBenchmarkResult result = gson.fromJson(jsonObject, MatMultBenchmarkResult.class);
-                                    table.getItems().add(result);
-                                } catch (Exception e) {
-                                    System.err.println("Failed to parse JSON object:");
-                                    System.err.println(jsonObject);
-                                    e.printStackTrace();
-                                }
-                            }
-                        }
-                    }
-                
                     int exitCode = process.waitFor();
                     if (exitCode != 0) {
                         throw new RuntimeException("Benchmark process exited with status " + exitCode);
                     }
-                
                 } catch (IOException | InterruptedException e) {
                     e.printStackTrace();
                 } catch (RuntimeException e) {

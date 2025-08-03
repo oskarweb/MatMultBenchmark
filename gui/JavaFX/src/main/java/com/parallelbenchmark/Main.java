@@ -9,9 +9,9 @@ import javafx.stage.Stage;
 public class Main extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
-        Parent root = FXMLLoader.load(getClass().getResource("/com/parallelbenchmark/main.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/com/parallelbenchmark/Main.fxml"));
         primaryStage.setTitle("JavaFX Process Launcher");
-        primaryStage.setScene(new Scene(root, 1000, 800));
+        primaryStage.setScene(new Scene(root, 1280, 960));
         primaryStage.show();
     }
 
