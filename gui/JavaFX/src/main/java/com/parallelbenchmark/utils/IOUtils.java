@@ -1,6 +1,5 @@
 package com.parallelbenchmark.utils;
 
-import javafx.collections.ObservableList;
 import com.google.gson.Gson;
 import com.parallelbenchmark.MatMultBenchmarkResult;
 
@@ -8,13 +7,15 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.List;
+import java.util.function.Consumer;
 
 public final class IOUtils {
     private IOUtils() {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    public static <T> void writeJsonObjectsToList(InputStream inputStream, ObservableList<T> dstList, Class<T> clazz) throws IOException {
+    public static <T> void readJsonObjects(InputStream inputStream, Class<T> clazz, Consumer<T> callback) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         Gson gson = new Gson();
         String line;
@@ -46,7 +47,7 @@ public final class IOUtils {
                 
                     try {
                         T result = gson.fromJson(jsonObject, clazz);
-                        dstList.add(result);
+                        callback.accept(result);
                     } catch (Exception e) {
                         System.err.println("Failed to parse JSON object:");
                         System.err.println(jsonObject);

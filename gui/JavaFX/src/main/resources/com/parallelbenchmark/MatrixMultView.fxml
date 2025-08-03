@@ -28,12 +28,12 @@
                 <TableView fx:id="resultTable" prefHeight="400" prefWidth="600"/>
             </Tab>
             <Tab text="Chart View">
-                <BarChart fx:id="barChart" title="Benchmark Chart" prefHeight="400" prefWidth="600">
+                <BarChart fx:id="barChart" title="Matrix Mult Benchmark" prefHeight="400" prefWidth="600" categoryGap="30">
                     <xAxis>
-                        <CategoryAxis label="Benchmark Name"/>
+                        <CategoryAxis fx:id="xAxis" label="Dims"/>
                     </xAxis>
                     <yAxis>
-                        <NumberAxis label="Avg Time (s)"/>
+                        <NumberAxis fx:id="yAxis" label="Avg Time (s)"/>
                     </yAxis>
                 </BarChart>
             </Tab>
