@@ -127,51 +127,48 @@ int runAllMatrixMultTypesWithDataTypes()
 template <typename DataType, MatMultType type>
 int dispatchMatOrder(int order)
 {
-    if (2 == order)
-        return runMatrixMultTypes<2, DataType, type>();
-    if (128 == order)
-        return runMatrixMultTypes<128, DataType, type>();
-    if (256 == order)
-        return runMatrixMultTypes<256, DataType, type>();
-    if (512 == order)
-        return runMatrixMultTypes<512, DataType, type>();
-    if (1024 == order)
-        return runMatrixMultTypes<1024, DataType, type>();
-    throw std::runtime_error("Unsupported mat mult order\n");
+    switch (order)
+    {
+        case 2: return runMatrixMultTypes<2, DataType, type>();
+        case 128: return runMatrixMultTypes<128, DataType, type>();
+        case 256: return runMatrixMultTypes<256, DataType, type>();
+        case 512: return runMatrixMultTypes<512, DataType, type>();
+        case 1024: return runMatrixMultTypes<1024, DataType, type>();
+        default: throw std::runtime_error("Unsupported mat mult order\n");
+    }
 }
 
 template <typename DataType>
 int dispatchMultType(int order, MatMultType mt) 
 {
-    if (MatMultType::Naive == mt)
-        return dispatchMatOrder<DataType, MatMultType::Naive>(order);
-    if (MatMultType::Simd == mt)
-        return dispatchMatOrder<DataType, MatMultType::Simd>(order);
-    if (MatMultType::MultithreadElement == mt)
-        return dispatchMatOrder<DataType, MatMultType::MultithreadElement>(order);
-    if (MatMultType::MultithreadRow == mt)
-        return dispatchMatOrder<DataType, MatMultType::MultithreadRow>(order);
-    if (MatMultType::MultithreadSimd == mt)
-        return dispatchMatOrder<DataType, MatMultType::MultithreadSimd>(order);
-    if (MatMultType::NaiveOcl == mt)
-        return dispatchMatOrder<DataType, MatMultType::NaiveOcl>(order);
-    throw std::runtime_error("Unsupported mat mult type\n");
+    switch (mt) 
+    {
+        case MatMultType::Naive: return dispatchMatOrder<DataType, MatMultType::Naive>(order);
+        case MatMultType::Simd: return dispatchMatOrder<DataType, MatMultType::Simd>(order);
+        case MatMultType::MultithreadElement: return dispatchMatOrder<DataType, MatMultType::MultithreadElement>(order);
+        case MatMultType::MultithreadRow: return dispatchMatOrder<DataType, MatMultType::MultithreadRow>(order);
+        case MatMultType::MultithreadSimd: return dispatchMatOrder<DataType, MatMultType::MultithreadSimd>(order);
+        case MatMultType::NaiveOcl: return dispatchMatOrder<DataType, MatMultType::NaiveOcl>(order);
+        default: throw std::runtime_error("Unsupported mat mult type\n");
+    }
 }
 
 int dispatchMultDataType(int order, MatMultType multType, MatMultDataType dataType) 
 {
-    if (MatMultDataType::Int32 == dataType)
-        return dispatchMultType<int32_t>(order, multType);
-    if (MatMultDataType::Uint32 == dataType)
-        return dispatchMultType<uint32_t>(order, multType);
-    if (MatMultDataType::Float == dataType)
-        return dispatchMultType<float>(order, multType);
-    if (MatMultDataType::Double == dataType)
-        return dispatchMultType<double>(order, multType);
-    throw std::runtime_error("Unsupported mat mult data type\n");
+    switch (dataType)
+    {
+        case MatMultDataType::Int32: return dispatchMultType<int32_t>(order, multType);
+        case MatMultDataType::Uint32: return dispatchMultType<uint32_t>(order, multType);
+        case MatMultDataType::Float: return dispatchMultType<float>(order, multType);
+        case MatMultDataType::Double: return dispatchMultType<double>(order, multType);
+        default: throw std::runtime_error("Unsupported mat mult data type\n");
+    }
 }
 
-int dispatchMatMultBenchmarks(const std::vector<int> &orderV, const std::vector<MatMultType> &multTypeV, const std::vector<MatMultDataType> &dataTypeV) 
+int dispatchMatMultBenchmarks(
+    const std::vector<int> &orderV, 
+    const std::vector<MatMultType> &multTypeV, 
+    const std::vector<MatMultDataType> &dataTypeV) 
 {
     int result{-1};
     
