@@ -111,10 +111,11 @@ int main(int argc, char *argv[])
         std::cerr << "Exception of unknown type!\n";
     }
 
+    std::vector<int> matrixOrdersToDispatch = { 128, 256 };
     std::vector<MatMultType> multTypesToDispatch = { MatMultType::Naive, MatMultType::NaiveOcl };
     std::vector<MatMultDataType> dataTypesToDispatch = { MatMultDataType::Float, MatMultDataType::Double };
 
-    return Benchmarks::dispatchMatMultBenchmarks(multTypesToDispatch, dataTypesToDispatch);
+    return Benchmarks::dispatchMatMultBenchmarks(matrixOrdersToDispatch,multTypesToDispatch, dataTypesToDispatch);
 
 
     // //assert(util::allEqual(res1, res2, res5, res6));

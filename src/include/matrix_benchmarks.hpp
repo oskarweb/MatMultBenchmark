@@ -98,13 +98,13 @@ protected:
     ThreadPool threadPool;
 };
 
-template <typename DataType, MatMultType... MultTypes>
+template <int Order, typename DataType, MatMultType... MultTypes>
 int runMatrixMultTypes()
 {
     ((MatMultBenchmark<
         DataType,
-        constants::DEFAULT_MATRIX_ORDER,
-        constants::DEFAULT_MATRIX_ORDER,
+        Order,
+        Order,
         MultTypes,
         DEFAULT_TASK_COUNT>().measure()), ...);
     return 0;
@@ -124,47 +124,66 @@ int runAllMatrixMultTypesWithDataTypes()
     return 0;
 }
 
+template <typename DataType, MatMultType type>
+int dispatchMatOrder(int order)
+{
+    if (2 == order)
+        return runMatrixMultTypes<2, DataType, type>();
+    if (128 == order)
+        return runMatrixMultTypes<128, DataType, type>();
+    if (256 == order)
+        return runMatrixMultTypes<256, DataType, type>();
+    if (512 == order)
+        return runMatrixMultTypes<512, DataType, type>();
+    if (1024 == order)
+        return runMatrixMultTypes<1024, DataType, type>();
+    throw std::runtime_error("Unsupported mat mult order\n");
+}
+
 template <typename DataType>
-int dispatchMultType(MatMultType mt) 
+int dispatchMultType(int order, MatMultType mt) 
 {
     if (MatMultType::Naive == mt)
-        return runMatrixMultTypes<DataType, MatMultType::Naive>();
+        return dispatchMatOrder<DataType, MatMultType::Naive>(order);
     if (MatMultType::Simd == mt)
-        return runMatrixMultTypes<DataType, MatMultType::Simd>();
+        return dispatchMatOrder<DataType, MatMultType::Simd>(order);
     if (MatMultType::MultithreadElement == mt)
-        return runMatrixMultTypes<DataType, MatMultType::MultithreadElement>();
+        return dispatchMatOrder<DataType, MatMultType::MultithreadElement>(order);
     if (MatMultType::MultithreadRow == mt)
-        return runMatrixMultTypes<DataType, MatMultType::MultithreadRow>();
+        return dispatchMatOrder<DataType, MatMultType::MultithreadRow>(order);
     if (MatMultType::MultithreadSimd == mt)
-        return runMatrixMultTypes<DataType, MatMultType::MultithreadSimd>();
+        return dispatchMatOrder<DataType, MatMultType::MultithreadSimd>(order);
     if (MatMultType::NaiveOcl == mt)
-        return runMatrixMultTypes<DataType, MatMultType::NaiveOcl>();
-    throw std::runtime_error("Unknown mult type\n");
+        return dispatchMatOrder<DataType, MatMultType::NaiveOcl>(order);
+    throw std::runtime_error("Unsupported mat mult type\n");
 }
 
-int dispatchMultDataType(MatMultType mt, MatMultDataType dt) 
+int dispatchMultDataType(int order, MatMultType multType, MatMultDataType dataType) 
 {
-    if (MatMultDataType::Int32 == dt)
-        return dispatchMultType<int32_t>(mt);
-    if (MatMultDataType::Uint32 == dt)
-        return dispatchMultType<uint32_t>(mt);
-    if (MatMultDataType::Float == dt)
-        return dispatchMultType<float>(mt);
-    if (MatMultDataType::Double == dt)
-        return dispatchMultType<double>(mt);
-    throw std::runtime_error("Unknown data type\n");
+    if (MatMultDataType::Int32 == dataType)
+        return dispatchMultType<int32_t>(order, multType);
+    if (MatMultDataType::Uint32 == dataType)
+        return dispatchMultType<uint32_t>(order, multType);
+    if (MatMultDataType::Float == dataType)
+        return dispatchMultType<float>(order, multType);
+    if (MatMultDataType::Double == dataType)
+        return dispatchMultType<double>(order, multType);
+    throw std::runtime_error("Unsupported mat mult data type\n");
 }
 
-int dispatchMatMultBenchmarks(const std::vector<MatMultType> &mtV, const std::vector<MatMultDataType> &dtV) 
+int dispatchMatMultBenchmarks(const std::vector<int> &orderV, const std::vector<MatMultType> &multTypeV, const std::vector<MatMultDataType> &dataTypeV) 
 {
     int result{-1};
     
-    for (auto &mt : mtV) 
+    for (auto &order : orderV)
     {
-        for (auto &dt : dtV) 
+        for (auto &multType : multTypeV) 
         {
-            result = Benchmarks::dispatchMultDataType(mt, dt);
-            if (result != 0) return result;
+            for (auto &dataType : dataTypeV) 
+            {
+                result = Benchmarks::dispatchMultDataType(order, multType, dataType);
+                if (result != 0) return result;
+            }
         }
     }
 
