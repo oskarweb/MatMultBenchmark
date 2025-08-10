@@ -5,6 +5,15 @@
 namespace Benchmarks
 {
 
+constexpr const std::array<int, 5> MatMultOrders =
+{
+    2,
+    128,
+    256,
+    512,
+    1024
+};
+
 template<typename DataType, 
     uint32_t Rows = constants::DEFAULT_MATRIX_ORDER, 
     uint32_t Columns = constants::DEFAULT_MATRIX_ORDER,

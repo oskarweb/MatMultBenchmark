@@ -1,8 +1,8 @@
 #include "matrix_benchmarks.hpp"
+#include "matrix_benchmark_prog_opts.hpp"
 #include "ocl_utils.hpp"
 #include "utils.hpp"
 
-#include <boost/program_options.hpp>
 #include <CL/cl.h>
 
 #include <iostream>
@@ -84,7 +84,9 @@ int main(int argc, char *argv[])
         boost_po::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
-            ("compression", boost_po::value<double>(), "set compression level")
+            ("matrix_dims", 
+             boost_po::value<MatBenchmarkProgOpts::MatrixDims>()->multitoken(),
+             std::string("at least 1 valid (" + MatBenchmarkProgOpts::MatrixDims::allowedStr() + ")").c_str())
         ;
 
         boost_po::variables_map vm;        

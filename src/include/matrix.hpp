@@ -44,15 +44,6 @@ enum class MatMultDataType
     Unknown 
 };
 
-constexpr const std::array<int, 5> MatMultOrders =
-{
-    2,
-    128,
-    256,
-    512,
-    1024
-};
-
 template<typename T, size_t Size>
 struct MatrixStorage {
     static constexpr bool stackAllocation = false; // (sizeof(T) * Size <= constants::getStackSize() / 100);
