@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
         boost_po::options_description desc("Allowed options");
         desc.add_options()
             ("help", "produce help message")
-            ("matrix_dims", 
+            (MatBenchmarkProgOpts::MatrixDims::name, 
              boost_po::value<MatBenchmarkProgOpts::MatrixDims>()->multitoken(),
              std::string("at least 1 valid (" + MatBenchmarkProgOpts::MatrixDims::allowedStr() + ")").c_str())
         ;

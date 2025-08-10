@@ -17,6 +17,8 @@ struct Option
 
     static const T allowed;
 
+    Option(const std::vector<value_type>& _opts) : opts(_opts) {}
+
     static std::string allowedStr(const std::string& sep = ", ") 
     {
         std::ostringstream oss;
@@ -29,16 +31,14 @@ struct Option
         return oss.str();
     }
 
-    virtual std::string name() const = 0;
+    std::vector<value_type> opts; 
 };
 
 struct MatrixDims : Option<MatrixDims, decltype(Benchmarks::MatMultOrders)> 
 {
-    MatrixDims(const std::vector<int> &dimV) : opts(dimV) {}
+    using Option::Option;
 
-    std::string name() const override { return "matrix_dims"; }
-
-    std::vector<value_type> opts;
+    inline static constexpr const char *name = "matrix_dims";
 };
 
 template<>
