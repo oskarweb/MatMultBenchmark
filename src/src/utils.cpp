@@ -28,7 +28,8 @@ std::string toString(MatMultType type)
     }
 }
 
-MatMultType toMultType(std::string_view str)
+template<>
+MatMultType fromString(std::string_view str)
 {
     const std::string strLower = toLower(str);
     if (strLower == "naive") { return MatMultType::Naive; }
@@ -37,7 +38,17 @@ MatMultType toMultType(std::string_view str)
     if (strLower == "multithreadelement") { return MatMultType::MultithreadElement; }
     if (strLower == "multithreadsimd") { return MatMultType::MultithreadSimd; }
     if (strLower == "naiveocl") { return MatMultType::NaiveOcl; }
-    return MatMultType::Unknown;
+    return MatMultType::Last;
 }
 
+template<>
+MatMultDataType fromString(std::string_view str)
+{
+    const std::string strLower = toLower(str);
+    if (strLower == "int32") { return MatMultDataType::Int32; }
+    if (strLower == "uint32") { return MatMultDataType::Uint32; }
+    if (strLower == "float") { return MatMultDataType::Float; }
+    if (strLower == "doble") { return MatMultDataType::Double; }
+    return MatMultDataType::Last;
+}
 }

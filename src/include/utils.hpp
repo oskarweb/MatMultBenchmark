@@ -17,6 +17,7 @@ template<typename DataType, int Rows, int Columns>
 class Matrix;
 
 enum class MatMultType;
+enum class MatMultDataType;
 
 template<typename DataType, int Rows, int Columns>
 std::ostream &operator<<(std::ostream &os, const Matrix<DataType, Rows, Columns> &m) 
@@ -224,5 +225,21 @@ inline std::string toLower(std::string_view sv)
 
 std::string toString(MatMultType type);
 
-MatMultType toMultType(const std::string &str);
+template <typename Enum>
+Enum fromString(std::string_view s) 
+{
+    static_assert(sizeof(Enum) == 0, "fromString not implemented");
+}
+
+template<typename T>
+constexpr auto enumAll() 
+requires requires { T::Last; }
+{
+    constexpr std::size_t N = static_cast<std::size_t>(T::Last) + 1;
+    std::array<T, N> values{};
+    for (std::size_t i = 0; i < N; ++i) {
+        values[i] = static_cast<T>(i);
+    }
+    return values;
+}
 } // namespace util

@@ -32,7 +32,7 @@ enum class MatMultType
     MultithreadElement,
     MultithreadSimd,
     NaiveOcl,
-    Unknown
+    Last
 };
 
 enum class MatMultDataType 
@@ -41,7 +41,7 @@ enum class MatMultDataType
     Uint32,
     Float,
     Double,
-    Unknown 
+    Last 
 };
 
 template<typename T, size_t Size>

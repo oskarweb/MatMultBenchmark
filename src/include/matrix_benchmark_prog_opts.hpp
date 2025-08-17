@@ -1,6 +1,7 @@
 #pragma once
 
 #include "matrix_benchmarks.hpp"
+#include "utils.hpp"
 
 #include <boost/program_options.hpp>
 
@@ -9,6 +10,36 @@
 
 namespace MatBenchmarkProgOpts
 {
+
+template <typename OptType>
+void validate(boost::any& v, const std::vector<std::string>& values, OptType*, int)
+{
+    using namespace boost::program_options;
+    using OptValueType = OptType::value_type;
+    validators::check_first_occurrence(v);
+
+    std::vector<OptValueType> parsed;
+    for (auto& s : values) 
+    {
+        OptValueType val;
+        if constexpr (std::is_enum_v<OptValueType>) 
+        {
+            val = fromString<OptValueType>(s);
+        }
+        else if constexpr (std::is_integral_v<OptValueType>)
+        {
+            val = std::stoi(s);
+        } 
+
+        if (std::find(OptType::allowed.begin(), OptType::allowed.end(), val) == OptType::allowed.end()) 
+        {
+            throw validation_error(validation_error::invalid_option_value, s);
+        }
+
+        parsed.push_back(val);
+    }
+    v = OptType{parsed};
+}
 
 template<typename Derived, typename T>
 struct Option
@@ -34,7 +65,7 @@ struct Option
     std::vector<value_type> opts; 
 };
 
-struct MatrixDims : Option<MatrixDims, decltype(Benchmarks::MatMultOrders)> 
+struct MatrixDimsOpt : Option<MatrixDimsOpt, decltype(Benchmarks::MatMultOrders)> 
 {
     using Option::Option;
 
@@ -43,25 +74,17 @@ struct MatrixDims : Option<MatrixDims, decltype(Benchmarks::MatMultOrders)>
 
 template<>
 decltype(Benchmarks::MatMultOrders)
-Option<MatrixDims, decltype(Benchmarks::MatMultOrders)>::allowed = Benchmarks::MatMultOrders;
+Option<MatrixDimsOpt, decltype(Benchmarks::MatMultOrders)>::allowed = Benchmarks::MatMultOrders;
 
-void validate(boost::any &v, const std::vector<std::string> &values, MatrixDims *, int)
+struct MatMultTypeOpt : Option<MatMultTypeOpt, decltype(Benchmarks::MatMultOrders)> 
 {
-    using namespace boost::program_options;
+    using Option::Option;
 
-    validators::check_first_occurrence(v);
+    inline static constexpr const char *name = "mult_type";
+};
 
-    std::vector<int> parsed;
-    for (auto& s : values) 
-    {
-        int val = std::stoi(s);
-        if (std::find(MatrixDims::allowed.begin(), MatrixDims::allowed.end(), val) == MatrixDims::allowed.end()) 
-        {
-            throw validation_error(validation_error::invalid_option_value, s);
-        }
-        parsed.push_back(val);
-    }
-    v = MatrixDims{parsed};
-}
+template<>
+const decltype(util::enumAll<MatMultType>())
+Option<MatMultTypeOpt, decltype(util::enumAll<MatMultType>())>::allowed = util::enumAll<MatMultType>();
 
 } // namespace MatBenchmarkProgOpts
