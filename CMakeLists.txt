@@ -16,6 +16,8 @@ project(${PROJECT_NAME} VERSION 1.0)
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -mfma")
+
 if(WIN32)
     set(CMAKE_PREFIX_PATH "${HOME}/OpenCL_SDK")
     

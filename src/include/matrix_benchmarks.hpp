@@ -34,7 +34,7 @@ protected:
 
     void compute() override
     {
-        m_matC = m_matA.mult<MultType>(m_matB);
+        m_matC = m_matA.template mult<MultType>(m_matB);
     }
 
     virtual void injectOutputParams(boost::json::object &obj) const 
@@ -70,7 +70,7 @@ protected:
 
     void compute() override
     {
-        m_matC = m_matA.mult<MatMultType::NaiveOcl>(m_matB);
+        m_matC = m_matA.template mult<MatMultType::NaiveOcl>(m_matB);
     }
 
     virtual void injectOutputParams(boost::json::object &obj) const 

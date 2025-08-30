@@ -70,7 +70,7 @@ public:
     template<MatMultType MultType>
     void run()
     {
-        auto resultMatrix = this->testedA.mult<MultType>(this->testedB);
+        auto resultMatrix = this->testedA.template mult<MultType>(this->testedB);
 
         for (size_t i = 0; i < this->expectedResultMatrix.size1(); ++i) 
         {
@@ -119,7 +119,7 @@ TYPED_TEST_SUITE(MatrixMultFixtureOcl, TestedMatrixDataTypeCombinations);
 #define MAT_MULT_TYPED_TEST(CaseName, MultType)                             \
 TYPED_TEST(CaseName, WhenPerforming##MultType##MultThenReturnCorrectResult) \
 {                                                                           \
-    this->run<MatMultType::MultType>();                                     \
+    this->template run<MatMultType::MultType>();                            \
 }
 
 MAT_MULT_TYPED_TEST(MatrixMultFixture, Naive);

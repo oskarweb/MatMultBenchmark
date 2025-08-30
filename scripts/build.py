@@ -35,8 +35,8 @@ def build_project(build_directory, jobs=None, target=None, build_type=None, stac
     options = ""
     options += f" -DSTACK_SIZE={stack_size}" if stack_size else ""
     options += f" -DBoost_DIR={boost_dir}" if boost_dir else ""
-    if platform.system() == "Linux":
-        options += " -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18"
+    # if platform.system() == "Linux":
+    #     options += " -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18"
     cmd = f"cmake {options} -B {build_directory} -S ."
     print(f"Boost_DIR:{boost_dir}")
     logger.info("CMake command line: %s", cmd)
