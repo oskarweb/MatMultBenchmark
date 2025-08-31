@@ -35,8 +35,8 @@ def build_project(build_directory, jobs=None, target=None, build_type=None, stac
     options = ""
     options += f" -DSTACK_SIZE={stack_size}" if stack_size else ""
     options += f" -DBoost_DIR={boost_dir}" if boost_dir else ""
-    # if platform.system() == "Linux":
-    #     options += " -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18"
+    options += f" -DCMAKE_BUILD_TYPE={build_type}" if build_type else ""
+
     cmd = f"cmake {options} -B {build_directory} -S ."
     print(f"Boost_DIR:{boost_dir}")
     logger.info("CMake command line: %s", cmd)
@@ -52,8 +52,6 @@ def build_project(build_directory, jobs=None, target=None, build_type=None, stac
         cmd += f" {jobs}"
     if target:
         cmd += f" --target {target}"
-    if build_type:
-        cmd += f" --config {build_type}"
     logger.info("CMake command line: %s", cmd)
     process = subprocess.run(
         cmd, shell=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

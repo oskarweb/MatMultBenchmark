@@ -6,11 +6,13 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     git \
+    gdb \
     python3 \
     python3-pip \
     ocl-icd-opencl-dev \
     opencl-headers \
     clinfo \
+    pocl-opencl-icd \
     libboost-all-dev
     
 WORKDIR /app
