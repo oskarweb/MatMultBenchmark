@@ -1,4 +1,4 @@
-FROM ubuntu:24.04
+FROM gradle:9.0.0-jdk21-noble
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     opencl-headers \
     clinfo \
     pocl-opencl-icd \
-    libboost-all-dev
+    libboost-all-dev 
     
 WORKDIR /app
 

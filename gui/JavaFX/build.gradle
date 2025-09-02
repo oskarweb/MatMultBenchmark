@@ -4,6 +4,9 @@ plugins {
     id 'org.beryx.jlink' version '3.1.1' 
 }
 
+import org.gradle.internal.os.OperatingSystem
+def os = OperatingSystem.current()
+
 repositories {
     mavenCentral()
 }
@@ -36,8 +39,14 @@ tasks.withType(JavaCompile).configureEach {
 task copyBenchmarks(type: Copy) {
     into "$buildDir"
 
-    from('../../build/debug/parallel_benchmark.exe') {
-        into 'benchmarks/bin'
+    if (os.isWindows()) {
+        from('../../build/debug/parallel_benchmark.exe') {
+            into 'benchmarks/bin'
+        }
+    } else if (os.isLinux()) {
+        from('../../build/bin/parallel_benchmark') {
+            into 'benchmarks/bin'
+        }
     }
 
     from('../../build/kernels') {
